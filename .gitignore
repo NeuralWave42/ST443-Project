@@ -1,0 +1,17 @@
+# Ignore directories
+Personal/
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore data files
+*.csv
+*.gz
+
+# Ignore model artifacts
+*.pkl
+
+# Ignore system files
+.DS_Store
+Thumbs.db
