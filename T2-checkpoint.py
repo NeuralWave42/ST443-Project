@@ -17,28 +17,35 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import balanced_accuracy_score
 from mlxtend.feature_selection import SequentialFeatureSelector as SFS
 from sklearn.linear_model import LogisticRegression
- import sklearn.linear_model as skl
+import sklearn.linear_model as skl
+from sklearn.linear_model import LassoCV
+from sklearn.linear_model import Lasso
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import ElasticNet
+from sklearn.model_selection import RepeatedStratifiedKFold 
+from sklearn.neighbors import NearestCentroid
 
+
+# ============================================================================
+# Question T2.1
+# ============================================================================
 
 #%% IMPORT THE DATA
 os.chdir('C:/Users/emmaqueen/Documents/ST443/PROJECT/')
 current_directory = os.getcwd()
-
 file2 = pd.read_csv('data2.csv.gz')
 print(file2.head())
-#pd.set_option("display.precision", 2)
+
 #%%
-#Explore the data to generate summary statistics and plots that help the reader un
-#derstand the data, with a focus on information relevant to the classification task.
+#SUMMARY OF OUR DATA
 
 shape = file2.shape
 info = file2.info()
 describe = file2.describe
 counts_of_actives_cells = file2["label"].value_counts()
 missing_values= file2.isnull().sum().sum()
-atoms_columns = file2.columns  # Get column names
 sparcity = (file2 == 0).mean().mean()  # Calculate sparsity
-
 
 
 print("The number od rows and columns is : ", shape)
@@ -53,161 +60,222 @@ file2['label'].value_counts().plot(kind='bar', color=['skyblue', 'orange'])
 plt.title("Distribution of Binding (label=1) vs. Non-Binding (label=-1) Compounds")
 plt.xlabel("Label")
 plt.ylabel("Count")
+plt.grid(True)
 plt.show()
 
 
 
 
+# ============================================================================
+# Question T2.2
+# ============================================================================
 #%%
 # Load the dataset
-# Assuming file2 is already loaded with 'label' as the target column
 
 X = file2.iloc[:, 1:]  # Features
 y = file2.iloc[:, 0]   # Target (label)
 
 # Split data into training and testing sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+X_train = X_train.astype('float32')  # Reduce memory usage
+y_train = y_train.astype('float32')
 
-# =============================================================================
-# Method 1: Lasso
-# =============================================================================
 #%%
+# =============================================================================
+# Method 1: Logistic regression with L1 regularization (Lasso)
+# =============================================================================
 
-#%% IMPORT THE LIBRARIES
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.linear_model import LassoCV
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import balanced_accuracy_score
-from sklearn.ensemble import RandomForestClassifier
+# Logistic Regression with L1 regularization
+logistic = LogisticRegression(penalty='l1', solver='saga', max_iter=5000, random_state=42)# Make predictions
 
-#%% IMPORT THE DATA
-file_path = 'data2.csv.gz'  # Replace with your actual file path
-file2 = pd.read_csv(file_path)
+# Define a grid of potential C values
+param_grid = {'C': np.logspace(-4, 4, 50)}  # Search range for C
+grid_search = GridSearchCV(estimator=logistic, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
+grid_search.fit(X_train, y_train)
 
-# Separate features and target
-X = file2.iloc[:, 1:]  # Features
-y = file2.iloc[:, 0]   # Target (label)
+# Best parameter
+best_c = grid_search.best_params_['C']
+print(f"Optimal C: {best_c}")
 
-# Check sparsity
-sparcity = (X == 0).mean().mean()
-print(f"Sparsity of the dataset: {sparcity:.2f}")
 
-#%% Data Preprocessing
-# Standardize features (important for Lasso)
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+#%%
+# see the values of c with the cross vlaidation accuracy
+# Extract results from GridSearchCV
+results = grid_search.cv_results_
+c_values = param_grid['C']
+mean_accuracies = results['mean_test_score']
 
-#%% Lasso Regression for Feature Selection
-# Use LassoCV to automatically tune the regularization parameter alpha
-lasso = LassoCV(cv=5, random_state=42, n_alphas=100)
-lasso.fit(X_scaled, y)
-
-# Identify selected features
-selected_features = np.where(lasso.coef_ != 0)[0]  # Indices of selected features
-print(f"Number of selected features: {len(selected_features)}")
-
-# Reduce dataset to selected features
-X_selected = X_scaled[:, selected_features]
-
-#%% Train/Test Split with Selected Features
-X_train, X_test, y_train, y_test = train_test_split(X_selected, y, test_size=0.3, random_state=42)
-
-# Train a simple classifier to evaluate the selected features
-rf_classifier = RandomForestClassifier(random_state=42)
-rf_classifier.fit(X_train, y_train)
-
-# Evaluate the classifier
-y_pred = rf_classifier.predict(X_test)
-balanced_acc = balanced_accuracy_score(y_test, y_pred)
-print(f"Balanced Accuracy with selected features: {balanced_acc:.4f}")
-
-#%% Visualizing Lasso Coefficients
-plt.figure(figsize=(10, 6))
-plt.plot(lasso.alphas_, np.sum(lasso.coef_ != 0, axis=0), marker='o')
-plt.gca().invert_xaxis()
-plt.title("Lasso Regularization Path")
-plt.xlabel("Alpha (Regularization Strength)")
-plt.ylabel("Number of Selected Features")
+# Plot the results
+plt.figure(figsize=(8, 6))
+plt.semilogx(c_values, mean_accuracies, marker='o')
+plt.xlabel('C (Inverse of Regularization Strength)')
+plt.ylabel('Cross-Validation Accuracy')
+plt.title('Cross-Validation Accuracy vs. C')
+plt.grid(True)
 plt.show()
 
+
+
+#%%
+# once we know the parameter alpha we can use it in the logistic function
+# Train the final model with the best C
+best_logistic = LogisticRegression(penalty='l1', solver='saga', C=best_c, max_iter=5000, random_state=42)
+best_logistic.fit(X_train, y_train)
+
+# Make predictions
+y_pred = best_logistic.predict(X_test)
+
+# Evaluate the performance
+accuracy_log = accuracy_score(y_test, y_pred)
+conf_matrix = confusion_matrix(y_test, y_pred)
+
+print(f"Accuracy: {accuracy_log}")
+print(f"Confusion Matrix:\n{conf_matrix}")
+
+
+#%%
+# Extract non-zero coefficients (selected features)
+selected_features_log = np.where(best_logistic.coef_ != 0)[1]
+print(f"Number of selected features: {len(selected_features_log)}")
 
 
 #%%
 # =============================================================================
 # Method 2: Random Forest Feature Importance
 # =============================================================================
-# Train a Random Forest classifier
-rf_clf = RandomForestClassifier(n_estimators=100, random_state=42)
-rf_clf.fit(X_train, y_train)
+# Train a Random Forest classifier on all the data
+model = RandomForestClassifier(random_state=42)
+model.fit(X_train, y_train)
+#%%
+# Rank the features importance
+importances = model.feature_importances_
+indices = np.argsort(importances)[::-1]  # Sort in descending order
 
-# Extract feature importances
-feature_importances = rf_clf.feature_importances_
-important_features_idx = np.argsort(feature_importances)[-20:]  # Select top 20 features
+#%%
+# Loop to find a the best number of k features
+best_k = 0
+best_balanced_acc = 0
+best_selected_features_for = None
+best_conf_matrix = None  
 
-# Select the top features based on importance
-X_train_rf = X_train.iloc[:, important_features_idx]
-X_test_rf = X_test.iloc[:, important_features_idx]
+for k in range(1, X_train.shape[1] + 1):
+    selected_features_for = indices[:k]  # Select top k features based on importance
+    X_train_k = X_train.iloc[:, selected_features_for]
+    X_test_k = X_test.iloc[:, selected_features_for]
 
-# Train and evaluate using only important features
-clf_rf = LogisticRegression(max_iter=1000, random_state=42)
-clf_rf.fit(X_train_rf, y_train)
-y_pred_rf = clf_rf.predict(X_test_rf)
+    # Train Random Forest with k features
+    model_k = RandomForestClassifier(random_state=42)
+    model_k.fit(X_train_k, y_train)
+    y_pred_k = model_k.predict(X_test_k)
 
-balanced_accuracy_rf = balanced_accuracy_score(y_test, y_pred_rf)
-print(f"Balanced Accuracy with Random Forest Feature Importance: {balanced_accuracy_rf:.4f}")
+    
+    balanced_acc_k = balanced_accuracy_score(y_test, y_pred_k)
+    conf_matrix_k = confusion_matrix(y_test, y_pred_k)
 
+    # Check if the accuracy is better tha the one before
+    if balanced_acc_k > best_balanced_acc:
+        best_k = k
+        best_balanced_acc = balanced_acc_k
+        best_selected_features_for = selected_features_for
+        best_conf_matrix = conf_matrix_k  # Store confusion matrix for the best model
+
+# Print the results
+print("\n--- Best Model Summary ---")
+print(f"Optimal Number of Features: {best_k}")
+print(f"Best Balanced Accuracy: {best_balanced_acc:.4f}")
+print(f"Best Confusion Matrix:\n{best_conf_matrix}")
 
 #%%
 # =============================================================================
 # Method 3: Forward Feature Selection - HYBRID 
 # =============================================================================
-# Use Logistic Regression for forward feature selection
-sfs = SFS(LogisticRegression(max_iter=1000, random_state=42),
-          k_features=10,  # Select top 10 features
-          forward=True,
-          floating=False,
-          scoring='balanced_accuracy',
-          cv=3)
 
-sfs = sfs.fit(X_train, y_train)
-
-# Selected features
-selected_features = list(sfs.k_feature_idx_)
-X_train_sfs = X_train.iloc[:, selected_features]
-X_test_sfs = X_test.iloc[:, selected_features]
-
-# Train and evaluate the model with selected features
-clf_sfs = LogisticRegression(max_iter=1000, random_state=42)
-clf_sfs.fit(X_train_sfs, y_train)
-y_pred_sfs = clf_sfs.predict(X_test_sfs)
-
-balanced_accuracy_sfs = balanced_accuracy_score(y_test, y_pred_sfs)
-print(f"Balanced Accuracy with Forward Feature Selection: {balanced_accuracy_sfs:.4f}")
 
 # =============================================================================
-# Comparison of Methods
+# Comparison of the 3 Methods
 # =============================================================================
-print("\nComparison of Balanced Accuracy:")
-print(f"PCA: {balanced_accuracy_pca:.4f}")
-print(f"Random Forest: {balanced_accuracy_rf:.4f}")
-print(f"Forward Feature Selection: {balanced_accuracy_sfs:.4f}")
 
+
+best_models = {
+    'logistic with lasso penalization': {
+        'model': best_logistic,
+        'features': selected_features_log
+    },
+    'random_forest': {
+        'model': best_selected_features_for,
+        'features': best_selected_features_for
+    }
+}
+
+
+
+
+#%%
+# ============================================================================
+# Question T2.3
+# ============================================================================
+
+# %%
+# ============================================================================
+# Elastic Net logistic Regression - mix between Lasso and Ridge
+# ============================================================================
+
+elastic_net = ElasticNet(alpha = 0.1, l1_ratio= 0.5, max_iter= 5000, random_state= 42)
+elastic_net.fit(X_train,y_train)
+
+
+param_grid2 = {
+    'alpha' = [0.1, 1, 10],
+    'l1_ratio' = [0.2, 0.5, 0.8]
+}
+
+grid_search2 = GridSearchCV(estimator=elastic_net, param_grid=param_grid2)
+grid_search.fit(X_train,y_train)
+
+best_alpha1 = grid_search2.best_estimator_.alpha
+best_l1ratio = grid_search2.best_estimator_.l1_ratio
+
+print('Best alpha : ', best_alpha1)
+print('Best l1 ratio : ', best_l1ratio)
+
+#%%
+
+results2 = grid_search2.cv_results_
+alpha_values = param_grid2['alpha']
+l1_balues = param_grid2['l1_ratio']
+mean_accuracies2 = results2['mean_test_score']
+
+
+# Plot the results
+plt.figure(figsize=(8, 6))
+plt.semilogx(alpha_values, mean_accuracies2, marker='o')
+plt.semilogx(l1_balues, mean_accuracies2, marker='x' )
+plt.grid(True)
+plt.show()
+
+
+#%%
+
+elastic_net_best = LogisticRegression(alpha = best_alpha1, l1_ratio= best_l1ratio, max_iter= 5000, random_state= 42)
+elastic_net_best.fit(X_train,y_train)
+
+y_red_elastic = elastic_net_best.predict(X_test)
+
+accuracy_elastic = accuracy_score(y_test,y_red_elastic)
+confusion_matrix_elastic = confusion_matrix(y_test,y_red_elastic)
+
+print(f"Accuracy :{accuracy_elastic}")
+print(f"Confusion Matrix : \n{confusion_matrix_elastic}")
+
+#%%
+selected_features_lelastic = np.where(elastic_net_best.coef_ != 0)[1]
+print(f"Number of selected features: {len(selected_features_lelastic)}")
 
 
 # %%
-# T3 - PCA
-pca = PCA(n_components=0.95)  # Retain 95% of variance
-X_train_pca = pca.fit_transform(X_train)
-X_test_pca = pca.transform(X_test)
+# ============================================================================
+# Method nearest Shrunken Centroid 
+# ============================================================================
 
-# Train a classifier on the PCA-transformed data
-clf_pca = LogisticRegression(max_iter=1000, random_state=42)
-clf_pca.fit(X_train_pca, y_train)
-y_pred_pca = clf_pca.predict(X_test_pca)
+#%%
 
-# Evaluate the classifier
-balanced_accuracy_pca = balanced_accuracy_score(y_test, y_pred_pca)
-print(f"Balanced Accuracy with PCA: {balanced_accuracy_pca:.4f}")
