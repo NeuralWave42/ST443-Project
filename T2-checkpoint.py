@@ -235,46 +235,71 @@ best_models = {
 # Elastic Net logistic Regression - mix between Lasso and Ridge
 # ============================================================================
 
-elastic_net = ElasticNet(alpha = 0.1, l1_ratio= 0.5, max_iter= 5000, random_state= 42)
-elastic_net.fit(X_train,y_train)
 
+# Define the model with ElasticNet regularization
+model = LogisticRegression(
+    penalty='elasticnet',  # ElasticNet regularization
+    solver='saga',         # Solver that supports ElasticNet  # Multinomial logistic regression
+    l1_ratio=0.5,          # α (balance between L1 and L2 regularization)
+    C=1.0,
+    max_iter=10000,
+    tol=1e-3,
+    class_weight='balanced'                # Regularization strength (inverse of λ)
+)
+
+model.fit(X_train,y_train)
 
 param_grid2 = {
-    'alpha' : [0.1, 1, 10],
-    'l1_ratio' : [0.2, 0.5, 0.8]
+    'C': [0.01, 0.05, 0.1],  # Fewer choices for C
+    'l1_ratio': [0.3, 0.5, 0.7]  # Fewer choices for l1_ratio
 }
 
-grid_search2 = GridSearchCV(estimator=elastic_net, param_grid=param_grid2)
+
+grid_search2 = GridSearchCV(estimator=model, param_grid=param_grid2)
 grid_search2.fit(X_train,y_train)
 
-best_alpha1 = grid_search2.best_estimator_.alpha
+best_C1 = grid_search2.best_estimator_.C
 best_l1ratio = grid_search2.best_estimator_.l1_ratio
 
-print('Best alpha : ', best_alpha1)
+print('Best alpha : ', best_C1)
 print('Best l1 ratio : ', best_l1ratio)
 
 #%%
 
 results2 = grid_search2.cv_results_
-alpha_values = param_grid2['alpha']
-l1_balues = param_grid2['l1_ratio']
+alpha_values = param_grid2['C']
+l1_values = param_grid2['l1_ratio']
 mean_accuracies2 = results2['mean_test_score']
 
+# Reshape mean accuracies to match the grid shape (len(l1_values) x len(alpha_values))
+mean_accuracies2 = mean_accuracies2.reshape(len(l1_values), len(alpha_values))
 
 # Plot the results
-plt.figure(figsize=(8, 6))
-plt.semilogx(alpha_values, mean_accuracies2, marker='o')
-plt.semilogx(l1_balues, mean_accuracies2, marker='x' )
-plt.grid(True)
-plt.show()
+plt.figure(figsize=(10, 8))
+for i, l1 in enumerate(l1_values):
+    plt.semilogx(alpha_values, mean_accuracies2[i, :], marker='o', label=f'l1_ratio={l1}')
 
+plt.xlabel("C (Inverse Regularization Strength)")
+plt.ylabel("Mean Cross-Validated Accuracy")
+plt.title("Grid Search Results for ElasticNet Logistic Regression")
+plt.legend()
+plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+plt.show()
 
 #%%
 
-elastic_net_best = ElasticNet(alpha = best_alpha1, l1_ratio= best_l1ratio, max_iter= 5000, random_state= 42)
-elastic_net_best.fit(X_train,y_train)
+model = LogisticRegression(
+    penalty='elasticnet',  # ElasticNet regularization
+    solver='saga',         # Solver that supports ElasticNet  # Multinomial logistic regression
+    l1_ratio=0.7,          # α (balance between L1 and L2 regularization)
+    C=0.05,
+    max_iter=1000,
+    tol=1e-3,
+    class_weight='balanced'                # Regularization strength (inverse of λ)
+)
 
-y_red_elastic = elastic_net_best.predict(X_test)
+model.fit(X_train,y_train)
+y_red_elastic = model.predict(X_test)
 
 accuracy_elastic = accuracy_score(y_test,y_red_elastic)
 confusion_matrix_elastic = confusion_matrix(y_test,y_red_elastic)
@@ -283,7 +308,7 @@ print(f"Accuracy :{accuracy_elastic}")
 print(f"Confusion Matrix : \n{confusion_matrix_elastic}")
 
 #%%
-selected_features_lelastic = np.where(elastic_net_best.coef_ != 0)[1]
+selected_features_lelastic = np.where(model.coef_ != 0)[1]
 print(f"Number of selected features: {len(selected_features_lelastic)}")
 
 
@@ -292,5 +317,5 @@ print(f"Number of selected features: {len(selected_features_lelastic)}")
 # Method nearest Shrunken Centroid 
 # ============================================================================
 
-#%%
+
 
