@@ -26,7 +26,8 @@ from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import RepeatedStratifiedKFold 
 from sklearn.neighbors import NearestCentroid
 from sklearn.model_selection import cross_val_score
-
+from sklearn.model_selection import KFold
+from sklearn.metrics import roc_curve, roc_auc_score
 # ============================================================================
 # Question T2.1
 # ============================================================================
@@ -57,13 +58,11 @@ print(f"Sparsity: {sparcity:.2f}")
 
 # PLOT OF THE INACTIVE AGAINST ACTIVE COMPOUNDS
 file2['label'].value_counts().plot(kind='bar', color=['skyblue', 'orange'])
-plt.title("Distribution of Binding (label=1) vs. Non-Binding (label=-1) Compounds")
+plt.title("Distribution of Active (label=1) vs. Non-Active (label=-1) Compounds")
 plt.xlabel("Label")
 plt.ylabel("Count")
 plt.grid(True)
 plt.show()
-
-
 
 
 # ============================================================================
@@ -72,7 +71,7 @@ plt.show()
 #%%
 # Load the dataset
 
-
+# removing a lot of features - we have 30 000 features now
 file2_new = file2.loc[:, file2.var() > 0.01]
 
 X = file2_new.iloc[:, 1:]  # Features
@@ -94,7 +93,7 @@ y_train = y_train.astype('float32')
 
 alpha_values = np.logspace(-4, 1, 15)  # Alpha values ranging from 0.0001 to 10000
 best_alpha = None
-best_cv_score = 0
+best_balanced_acc_log = 0
 mean_cv_score={}
 
 # Loop through alpha values to find the best one using cross-validation
@@ -103,19 +102,19 @@ for alpha in alpha_values:
     model = LogisticRegression(penalty='l1', solver='saga', C=alpha, max_iter=10000, tol=1e-3, random_state=42,class_weight='balanced')
     
     # Perform cross-validation
-    cv_scores = cross_val_score(model, X, y, cv=5, scoring='accuracy')  # 5-fold cross-validation
+    cv_scores = cross_val_score(model, X, y, cv=5, scoring='balanced_accuracy')  # 5-fold cross-validation
     
     # Compute the mean accuracy from cross-validation
     mean_cv_score[alpha] = np.mean(cv_scores)
     
     # Update the best alpha if the current mean accuracy is better
-    if mean_cv_score[alpha] > best_cv_score:
-        best_cv_score = mean_cv_score[alpha]
+    if mean_cv_score[alpha] > best_balanced_acc_log:
+        best_balanced_acc_log = mean_cv_score[alpha]
         best_alpha = alpha
 
 # Print the best alpha and its corresponding cross-validated accuracy
 print(f"Best alpha (C): {best_alpha}")
-print(f"Best cross-validated accuracy: {best_cv_score}")
+print(f"Best cross-validated accuracy: {best_balanced_acc_log}")
 
 #%%
 # see the values of c with the cross vlaidation accuracy
@@ -123,9 +122,9 @@ print(f"Best cross-validated accuracy: {best_cv_score}")
 # Plot the results
 plt.figure(figsize=(8, 6))
 plt.semilogx(alpha_values, list(mean_cv_score.values()), marker='o')
-plt.xlabel('C (Inverse of Regularization Strength)')
-plt.ylabel('Cross-Validation Accuracy')
-plt.title('Cross-Validation Accuracy vs. C')
+plt.xlabel('C = 1/lambda (Inverse of Lambda)')
+plt.ylabel('Balanced Cross-Validation Accuracy')
+plt.title('Balanced Cross-Validation Accuracy for different valeur of Lambda')
 plt.grid(True)
 plt.show()
 
@@ -134,25 +133,38 @@ plt.show()
 #%%
 # once we know the parameter alpha we can use it in the logistic function
 # Train the final model with the best C
-best_logistic = LogisticRegression(penalty='l1', solver='saga', C=best_alpha, max_iter=5000, random_state=42)
-best_logistic.fit(X_train, y_train)
+best_logistic_log = LogisticRegression(penalty='l1', solver='saga', C=best_alpha, max_iter=5000, random_state=42)
+best_logistic_log.fit(X_train, y_train)
 
 # Make predictions
-y_pred = best_logistic.predict(X_test)
+y_pred_log = best_logistic_log.predict(X_test)
 
 # Evaluate the performance
-accuracy_log = accuracy_score(y_test, y_pred)
-conf_matrix = confusion_matrix(y_test, y_pred)
+accuracy_log = accuracy_score(y_test, y_pred_log)
+balanced_accuracy_log = balanced_accuracy_score(y_test, y_pred_log)
+conf_matrix_log = confusion_matrix(y_test, y_pred_log)
+selected_features_log = np.where(best_logistic_log.coef_ != 0)[1]
 
 print(f"Accuracy: {accuracy_log}")
-print(f"Confusion Matrix:\n{conf_matrix}")
-
-
-#%%
-# Extract non-zero coefficients (selected features)
-selected_features_log = np.where(best_logistic.coef_ != 0)[1]
+print(f"Balanced Accuracy : {balanced_accuracy_log}")
+print(f"Confusion Matrix:\n{conf_matrix_log}")
 print(f"Number of selected features: {len(selected_features_log)}")
 
+#%%
+
+#Compute ROC curve and AUC
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_log)
+auc = roc_auc_score(y_test, y_pred_log)
+
+# Plot the ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='b', label=f'ROC curve (AUC = {auc:.2f})')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve LASSO')
+plt.legend(loc='lower right')
+plt.grid(True)
+plt.show()
 
 #%%
 # =============================================================================
@@ -168,15 +180,18 @@ indices = np.argsort(importances)[::-1]  # Sort in descending order
 
 #%%
 # Loop to find a the best number of k features
-best_k = 0
-best_balanced_acc = 0
+best_k_= 0
+best_balanced_acc_tree = 0
 best_selected_features_for = None
 best_conf_matrix = None  
+num_features = []
+balanced_accuracies = []
+
 
 for k in range(1, X_train.shape[1] - 29000):
     selected_features_for = indices[:k]  # Select top k features based on importance
-    X_train_k = X_train.iloc[:, selected_features_for]
-    X_test_k = X_test.iloc[:, selected_features_for]
+    X_train_k = X_train[:, selected_features_for]
+    X_test_k = X_test[:, selected_features_for]
 
     # Train Random Forest with k features
     model_k = RandomForestClassifier(random_state=42,n_estimators=20,max_features='log2',class_weight='balanced',max_depth=10)
@@ -186,19 +201,48 @@ for k in range(1, X_train.shape[1] - 29000):
     
     balanced_acc_k = balanced_accuracy_score(y_test, y_pred_k)
     conf_matrix_k = confusion_matrix(y_test, y_pred_k)
+    num_features.append(k)
+    balanced_accuracies.append(balanced_acc_k)
 
     # Check if the accuracy is better tha the one before
-    if balanced_acc_k > best_balanced_acc:
+    if balanced_acc_k > best_balanced_acc_tree:
         best_k = k
-        best_balanced_acc = balanced_acc_k
+        best_balanced_acc_tree = balanced_acc_k
         best_selected_features_for = selected_features_for
         best_conf_matrix = conf_matrix_k  # Store confusion matrix for the best model
+        y_pred_best = y_pred_k
 
+#%% PLOT THE NB OF FEATURES VS BALANCED ACCURACY 
+
+plt.figure(figsize=(8, 6))
+plt.plot(num_features, balanced_accuracies, marker='o', linestyle='-', color='b')
+plt.xlabel('Number of Features')
+plt.ylabel('Balanced Accuracy')
+plt.title('Balanced Accuracy vs Number of Features in Random Forest')
+plt.grid(True)
+plt.show()
+
+#%%
 # Print the results
 print("\n--- Best Model Summary ---")
 print(f"Optimal Number of Features: {best_k}")
-print(f"Best Balanced Accuracy: {best_balanced_acc:.4f}")
+print(f"Best Balanced Accuracy: {best_balanced_acc_tree:.4f}")
 print(f"Best Confusion Matrix:\n{best_conf_matrix}")
+
+#%%
+#Compute ROC curve and AUC
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_best)
+auc2 = roc_auc_score(y_test, y_pred_best)
+
+# Plot the ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='b', label=f'ROC curve (AUC = {auc2:.2f})')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve RANDOM FOREST')
+plt.legend(loc='lower right')
+plt.grid(True)
+plt.show()
 
 #%%
 # =============================================================================
@@ -211,16 +255,6 @@ print(f"Best Confusion Matrix:\n{best_conf_matrix}")
 # =============================================================================
 
 
-best_models = {
-    'logistic with lasso penalization': {
-        'model': best_logistic,
-        'features': selected_features_log
-    },
-    'random_forest': {
-        'model': best_selected_features_for,
-        'features': best_selected_features_for
-    }
-}
 
 
 
@@ -283,7 +317,7 @@ plt.xlabel("C (Inverse Regularization Strength)")
 plt.ylabel("Mean Cross-Validated Accuracy")
 plt.title("Grid Search Results for ElasticNet Logistic Regression")
 plt.legend()
-plt.grid(True, which="both", linestyle="--", linewidth=0.5)
+plt.grid(True)
 plt.show()
 
 #%%
@@ -318,4 +352,94 @@ print(f"Number of selected features: {len(selected_features_lelastic)}")
 # ============================================================================
 
 
+def soft_threshold(dkj, delta):
+    return np.sign(dkj) * np.maximum(0, np.abs(dkj) - delta)
 
+def nearest_shrunken_centroid(X_train, y_train, X_test, delta):
+    classes = np.unique(y_train)
+    n_features = X_train.shape[1]
+    N = len(X_train)
+
+    # Compute overall mean
+    overall_mean = X_train.mean(axis=0)
+
+    # Compute centroids for each class
+    centroids = np.array([X_train[y_train == cls].mean(axis=0) for cls in classes])
+
+    # Compute pooled variance for each feature
+    pooled_var = np.var(X_train, axis=0)
+    s0 = np.median(pooled_var)
+
+    # Compute class sizes
+    class_sizes = [np.sum(y_train == cls) for cls in classes]
+
+    # Shrink centroids toward the overall mean
+    shrunken_centroids = np.zeros_like(centroids)
+    selected_features_count = 0  # Counter for selected features
+
+    for i, cls in enumerate(classes):
+        for j in range(n_features):
+            m_k = class_sizes[i] / N  # Proportional size of class k
+            # Compute dkj
+            dkj = (centroids[i, j] - overall_mean[j]) / (m_k * (pooled_var[j] + s0))
+            # Apply soft thresholding
+            dkj_prime = soft_threshold(dkj, delta)
+            # Recompute shrunken centroid for feature j in class k
+            shrunken_centroids[i, j] = overall_mean[j] + m_k * (pooled_var[j] + s0) * dkj_prime
+            if dkj_prime != 0:
+                selected_features_count += 1
+
+    # Predict test samples by finding the closest centroid
+    y_pred = []
+    for x in X_test:
+        distances = []
+        for i, cls in enumerate(classes):
+            dist = np.sum(((x - shrunken_centroids[i]) ** 2) / (pooled_var + s0))  # Distance calculation
+            distances.append(dist)
+        y_pred.append(classes[np.argmin(distances)])  # Class with minimum distance
+
+    return np.array(y_pred), selected_features_count  # Return predictions and selected feature count
+
+# %% 
+
+# Cross-validation to tune delta
+def tune_delta(X, y, deltas, n_splits=5):
+    kf = KFold(n_splits=n_splits)
+    best_delta = None
+    best_accuracy = 0
+    best_selected_features_count = 0
+
+    for delta in deltas:
+        accuracies = []
+        for train_idx, val_idx in kf.split(X):
+            X_train, X_val = X[train_idx], X[val_idx]
+            y_train, y_val = y[train_idx], y[val_idx]
+
+            y_pred, selected_features_count = nearest_shrunken_centroid(X_train, y_train, X_val, delta)
+            accuracies.append(accuracy_score(y_val, y_pred))
+        
+        mean_accuracy = np.mean(accuracies)
+        if mean_accuracy > best_accuracy:
+            best_accuracy = mean_accuracy
+            best_delta = delta
+            best_selected_features_count = selected_features_count  # Track the best number of selected features
+    
+    return best_delta, best_accuracy, best_selected_features_count
+
+
+# %% 
+
+# Example usage
+deltas = np.linspace(0, 1, 10)  # Test values for delta
+best_delta, best_accuracy, best_selected_features_count = tune_delta(X_train, y_train, deltas)
+print(f"Best Delta: {best_delta}, Best Cross-Validation Accuracy: {best_accuracy:.4f}")
+print(f"Number of Selected Features: {best_selected_features_count}")
+
+# %% 
+
+# Evaluate on the test set with the best delta
+y_pred, _ = nearest_shrunken_centroid(X_train, y_train, X_test, delta=best_delta)
+test_accuracy = accuracy_score(y_test, y_pred)
+print(f"Test Accuracy: {test_accuracy:.4f}")
+
+# %% 
