@@ -25,7 +25,7 @@ from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import ElasticNet
 from sklearn.model_selection import RepeatedStratifiedKFold 
 from sklearn.neighbors import NearestCentroid
-
+from sklearn.model_selection import cross_val_score
 
 # ============================================================================
 # Question T2.1
@@ -49,7 +49,7 @@ sparcity = (file2 == 0).mean().mean()  # Calculate sparsity
 
 
 print("The number od rows and columns is : ", shape)
-print(" The statistic summary is : ", describe)
+#print(" The statistic summary is : ", describe)
 print("The percentage of active cells is :", counts_of_actives_cells)
 print("Missing values in total in the Data set : ", missing_values)
 print(f"Sparsity: {sparcity:.2f}")
@@ -72,42 +72,57 @@ plt.show()
 #%%
 # Load the dataset
 
-X = file2.iloc[:, 1:]  # Features
-y = file2.iloc[:, 0]   # Target (label)
+
+file2_new = file2.loc[:, file2.var() > 0.01]
+
+X = file2_new.iloc[:, 1:]  # Features
+y = file2_new.iloc[:, 0]   # Target (label)
 
 # Split data into training and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 X_train = X_train.astype('float32')  # Reduce memory usage
 y_train = y_train.astype('float32')
 
+
+
+
 #%%
 # =============================================================================
 # Method 1: Logistic regression with L1 regularization (Lasso)
 # =============================================================================
 
-# Logistic Regression with L1 regularization
-logistic = LogisticRegression(penalty='l1', solver='saga', max_iter=5000, random_state=42)# Make predictions
 
-# Define a grid of potential C values
-param_grid = {'C': np.logspace(-4, 4, 50)}  # Search range for C
-grid_search = GridSearchCV(estimator=logistic, param_grid=param_grid, cv=5, scoring='accuracy', n_jobs=-1)
-grid_search.fit(X_train, y_train)
+alpha_values = np.logspace(-4, 1, 15)  # Alpha values ranging from 0.0001 to 10000
+best_alpha = None
+best_cv_score = 0
+mean_cv_score={}
 
-# Best parameter
-best_c = grid_search.best_params_['C']
-print(f"Optimal C: {best_c}")
+# Loop through alpha values to find the best one using cross-validation
+for alpha in alpha_values:
+    # Define the Logistic Regression model
+    model = LogisticRegression(penalty='l1', solver='saga', C=alpha, max_iter=10000, tol=1e-3, random_state=42,class_weight='balanced')
+    
+    # Perform cross-validation
+    cv_scores = cross_val_score(model, X, y, cv=5, scoring='accuracy')  # 5-fold cross-validation
+    
+    # Compute the mean accuracy from cross-validation
+    mean_cv_score[alpha] = np.mean(cv_scores)
+    
+    # Update the best alpha if the current mean accuracy is better
+    if mean_cv_score[alpha] > best_cv_score:
+        best_cv_score = mean_cv_score[alpha]
+        best_alpha = alpha
 
+# Print the best alpha and its corresponding cross-validated accuracy
+print(f"Best alpha (C): {best_alpha}")
+print(f"Best cross-validated accuracy: {best_cv_score}")
 
 #%%
 # see the values of c with the cross vlaidation accuracy
-# Extract results from GridSearchCV
-results = grid_search.cv_results_
-c_values = param_grid['C']
-mean_accuracies = results['mean_test_score']
-
+#
 # Plot the results
 plt.figure(figsize=(8, 6))
-plt.semilogx(c_values, mean_accuracies, marker='o')
+plt.semilogx(alpha_values, list(mean_cv_score.values()), marker='o')
 plt.xlabel('C (Inverse of Regularization Strength)')
 plt.ylabel('Cross-Validation Accuracy')
 plt.title('Cross-Validation Accuracy vs. C')
@@ -119,7 +134,7 @@ plt.show()
 #%%
 # once we know the parameter alpha we can use it in the logistic function
 # Train the final model with the best C
-best_logistic = LogisticRegression(penalty='l1', solver='saga', C=best_c, max_iter=5000, random_state=42)
+best_logistic = LogisticRegression(penalty='l1', solver='saga', C=best_alpha, max_iter=5000, random_state=42)
 best_logistic.fit(X_train, y_train)
 
 # Make predictions
@@ -144,7 +159,7 @@ print(f"Number of selected features: {len(selected_features_log)}")
 # Method 2: Random Forest Feature Importance
 # =============================================================================
 # Train a Random Forest classifier on all the data
-model = RandomForestClassifier(random_state=42)
+model = RandomForestClassifier(random_state=42,max_features='sqrt',class_weight='balanced',min_samples_leaf=9)
 model.fit(X_train, y_train)
 #%%
 # Rank the features importance
@@ -164,7 +179,7 @@ for k in range(1, X_train.shape[1] + 1):
     X_test_k = X_test.iloc[:, selected_features_for]
 
     # Train Random Forest with k features
-    model_k = RandomForestClassifier(random_state=42)
+    model_k = RandomForestClassifier(random_state=42,max_features='log2',class_weight='balanced',min_samples_leaf=9)
     model_k.fit(X_train_k, y_train)
     y_pred_k = model_k.predict(X_test_k)
 
@@ -225,12 +240,12 @@ elastic_net.fit(X_train,y_train)
 
 
 param_grid2 = {
-    'alpha' = [0.1, 1, 10],
-    'l1_ratio' = [0.2, 0.5, 0.8]
+    'alpha' : [0.1, 1, 10],
+    'l1_ratio' : [0.2, 0.5, 0.8]
 }
 
 grid_search2 = GridSearchCV(estimator=elastic_net, param_grid=param_grid2)
-grid_search.fit(X_train,y_train)
+grid_search2.fit(X_train,y_train)
 
 best_alpha1 = grid_search2.best_estimator_.alpha
 best_l1ratio = grid_search2.best_estimator_.l1_ratio
@@ -256,7 +271,7 @@ plt.show()
 
 #%%
 
-elastic_net_best = LogisticRegression(alpha = best_alpha1, l1_ratio= best_l1ratio, max_iter= 5000, random_state= 42)
+elastic_net_best = ElasticNet(alpha = best_alpha1, l1_ratio= best_l1ratio, max_iter= 5000, random_state= 42)
 elastic_net_best.fit(X_train,y_train)
 
 y_red_elastic = elastic_net_best.predict(X_test)
