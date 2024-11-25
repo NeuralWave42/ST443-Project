@@ -159,7 +159,7 @@ print(f"Number of selected features: {len(selected_features_log)}")
 # Method 2: Random Forest Feature Importance
 # =============================================================================
 # Train a Random Forest classifier on all the data
-model = RandomForestClassifier(random_state=42,max_features='sqrt',class_weight='balanced',min_samples_leaf=9)
+model = RandomForestClassifier(random_state=42,)
 model.fit(X_train, y_train)
 #%%
 # Rank the features importance
@@ -173,13 +173,13 @@ best_balanced_acc = 0
 best_selected_features_for = None
 best_conf_matrix = None  
 
-for k in range(1, X_train.shape[1] + 1):
+for k in range(1, X_train.shape[1] - 29000):
     selected_features_for = indices[:k]  # Select top k features based on importance
     X_train_k = X_train.iloc[:, selected_features_for]
     X_test_k = X_test.iloc[:, selected_features_for]
 
     # Train Random Forest with k features
-    model_k = RandomForestClassifier(random_state=42,max_features='log2',class_weight='balanced',min_samples_leaf=9)
+    model_k = RandomForestClassifier(random_state=42,n_estimators=20,max_features='log2',class_weight='balanced',max_depth=10)
     model_k.fit(X_train_k, y_train)
     y_pred_k = model_k.predict(X_test_k)
 
