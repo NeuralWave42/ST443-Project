@@ -7,7 +7,6 @@ __pycache__/
 
 *.ipynb_checkpoints/
 # Ignore data files
-*.csv
 *.gz
 
 # Ignore model artifacts
