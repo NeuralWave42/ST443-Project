@@ -1,0 +1,1 @@
+{"rf__criterion": "gini", "rf__max_features": "sqrt", "rf__n_estimators": 300, "MODEL_NAME": "rf", "DATE": "12/03/2024, 14:42:07", "TIME_ELAPSED": 3.431753130753835}

@@ -1,0 +1,1 @@
+{"svm__C": 0.901, "svm__class_weight": "balanced", "svm__gamma": "scale", "svm__kernel": "sigmoid", "MODEL_NAME": "svm", "DATE": "12/03/2024, 14:07:29", "TIME_ELAPSED": 129.90119701226553}
