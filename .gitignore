@@ -4,7 +4,8 @@ Personal/
 # Ignore Python cache files
 __pycache__/
 *.pyc
-
+*.aux
+*.log
 *.ipynb_checkpoints/
 # Ignore data files
 *.gz
