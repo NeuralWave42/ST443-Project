@@ -1,0 +1,1 @@
+{"gbdt__learning_rate": 0.1, "gbdt__max_depth": 3, "gbdt__max_features": 130, "gbdt__n_estimators": 500, "MODEL_NAME": "gbdt", "DATE": "12/05/2024, 15:01:52", "TIME_ELAPSED": 81.41866358121236}
