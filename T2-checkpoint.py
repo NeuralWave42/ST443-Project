@@ -84,6 +84,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 X_train = X_train.astype('float32')  # Reduce memory usage
 y_train = y_train.astype('float32')
 
+# we balance the class
 smote = SMOTE(random_state=42)
 X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
@@ -94,8 +95,7 @@ X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 # =============================================================================
 
 
-
-alpha_values = np.logspace(-1, 1, 5)  # Alpha values ranging from 0.0001 to 10000
+alpha_values = np.logspace(-2, 0, 5)  # Alpha values ranging from 0.0001 to 10000
 best_alpha = None
 best_balanced_acc_log = 0
 mean_cv_score={}
@@ -105,7 +105,7 @@ mean_cv_score={}
 # Loop through alpha values to find the best one using cross-validation
 for alpha in alpha_values:
     # Define the Logistic Regression model
-    model = LogisticRegression(penalty='l1', solver='saga', C=alpha, max_iter=10000, tol=1e-3, random_state=42,class_weight='balanced')
+    model = LogisticRegression(penalty='l1', solver='saga', C=alpha, max_iter=5000, tol=1e-3, random_state=42,class_weight='balanced')
     
     # Perform cross-validation
 
@@ -142,9 +142,7 @@ plt.show()
 # once we know the parameter alpha we can use it in the logistic function
 # Train the final model with the best C
 best_logistic_log = LogisticRegression(penalty='l1', solver='saga', C=best_alpha, max_iter=5000, random_state=42)
-best_logistic_log.fit(X_train, y_train)
-
-# Make predictions
+best_logistic_log.fit(X_train, y_train)s
 y_pred_log = best_logistic_log.predict(X_test)
 
 # Evaluate the performance
@@ -181,7 +179,6 @@ plt.show()
 # Train a Random Forest classifier on all the data
 model = RandomForestClassifier(random_state=42,)
 model.fit(X_train, y_train)
-
 
 
 #%%
@@ -245,13 +242,14 @@ model_best.fit(X_train_best, y_train)
 y_pred_best = model_best.predict(X_test_best)
 
 
-
 best_bal_acc_final = balanced_accuracy_score(y_test, y_pred_best) 
 conf_matrix_best = confusion_matrix(y_test, y_pred_best)
+accuracy_tree = accuracy_score(y_test, y_pred_best)
 
 
 # Print the results
 print("\n--- Best Model Summary ---")
+print(f"Best Accuracy : {accuracy_tree:.4f}")
 print(f"Best Balanced Accuracy: {best_bal_acc_final:.4f}")
 print(f"Best Confusion Matrix:\n{conf_matrix_best}")
 print(f"For the final model we have {best_k} features")
@@ -296,81 +294,92 @@ plt.show()
 # Elastic Net logistic Regression - mix between Lasso and Ridge
 # ============================================================================
 
-
-# Define the model with ElasticNet regularization
-model = LogisticRegression(
-    penalty='elasticnet',  # ElasticNet regularization
-    solver='saga',         # Solver that supports ElasticNet  # Multinomial logistic regression
-    l1_ratio=0.5,          # α (balance between L1 and L2 regularization)
-    C=1.0,
-    max_iter=10000,
-    tol=1e-3,
-    class_weight='balanced'                # Regularization strength (inverse of λ)
-)
-
-model.fit(X_train,y_train)
-
-param_grid2 = {
-    'C': [0.01, 0.05, 0.1],  # Fewer choices for C
-    'l1_ratio': [0.3, 0.5, 0.7]  # Fewer choices for l1_ratio
-}
+alpha_values_elastinet = np.logspace(-1, 1, 5)
+l1_ration_values = np.linspace(0.1, 0.9, 5)
 
 
-grid_search2 = GridSearchCV(estimator=model, param_grid=param_grid2)
-grid_search2.fit(X_train,y_train)
+best_alpha_el = None
+best_l1_ratio = None
+best_balanced_acc_el = 0
+mean_cv_score_el  ={}
 
-best_C1 = grid_search2.best_estimator_.C
-best_l1ratio = grid_search2.best_estimator_.l1_ratio
+for alpha in alpha_values_elastinet:
+    for l1 in l1_ration_values : 
+        model = LogisticRegression(penalty='elasticnet', solver='saga', C=alpha, l1_ratio = l1, max_iter=10000, tol=1e-3, random_state=42, class_weight='balanced')
 
-print('Best alpha : ', best_C1)
-print('Best l1 ratio : ', best_l1ratio)
+        cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+        cv_score = cross_val_score(model, X_train_balanced, y_train_balanced,cv= cv, scoring='balanced_accuracy')
+        mean_cv_score_el [(alpha, l1)] = np.mean(cv_score)
+
+        if mean_cv_score_el[(alpha, l1)]> best_balanced_acc_el : 
+            best_alpha_el=alpha
+            best_l1_ratio = l1
+            best_balanced_acc_el = mean_cv_score_el[(alpha, l1)]
+
+print(f"Best alpha for cross validation is : {best_alpha_el}")
+print(f"Best l1_ration for balanced accuracy is : {best_l1_ratio}")
+print(f"Best balanced accuracy for cross validation {best_balanced_acc_el}")
+
+
+#%% PLOT ALPHA AND L1  VS BALANCED ACCURACY 
+
+# dictionnary to dataframe
+mean_cv_df = pd.DataFrame([(alpha, l1, acc) for (alpha, l1), acc in mean_cv_score_el.items()],columns=['alpha', 'l1_ratio', 'balanced_accuracy'])
+
+# Create plot
+plt.figure(figsize=(8, 6))
+sns.scatterplot(data=mean_cv_df, x='alpha', y='l1_ratio', hue='balanced_accuracy',palette='viridis', size='balanced_accuracy',marker='o',legend=None)
+plt.xlabel('Alpha')
+plt.ylabel('L1 Ratio')
+plt.title('Balanced Accuracy for very combination of Alpha and L1 Ratio ')
+plt.colorbar(label='Balanced Accuracy') 
+plt.grid(True)
+
+# Annotate each point with the balanced accuracy value
+for line in mean_cv_df.itertuples():
+    plt.text(
+        line.alpha, line.l1_ratio, f'{line.balanced_accuracy:.4f}', 
+        fontsize=9, ha='center', va='center', color='black'
+    )
+
+plt.show()
+
 
 #%%
 
-results2 = grid_search2.cv_results_
-alpha_values = param_grid2['C']
-l1_values = param_grid2['l1_ratio']
-mean_accuracies2 = results2['mean_test_score']
+model_elasticnet = LogisticRegression(penalty='elasticnet', solver='saga', C=best_alpha_el, l1_ratio = best_l1_ratio, max_iter=10000, tol = 1e-3, random_state=42, class_weight='balanced')
+model_elasticnet.fit(X_train, y_train)
+y_pred_el = model_elasticnet.predict(X_test_best)
 
-# Reshape mean accuracies to match the grid shape (len(l1_values) x len(alpha_values))
-mean_accuracies2 = mean_accuracies2.reshape(len(l1_values), len(alpha_values))
 
-# Plot the results
-plt.figure(figsize=(10, 8))
-for i, l1 in enumerate(l1_values):
-    plt.semilogx(alpha_values, mean_accuracies2[i, :], marker='o', label=f'l1_ratio={l1}')
+accuracy_el_final = accuracy_score(y_test, y_pred_el)
+balanced_accuracy_el_final = balanced_accuracy_score(y_test, y_pred_el)
+conf_matrix_el=confusion_matrix(y_test, y_pred_el)
+selected_features_el = np.where(model_elasticnet.coef_!=0)[1]
 
-plt.xlabel("C (Inverse Regularization Strength)")
-plt.ylabel("Mean Cross-Validated Accuracy")
-plt.title("Grid Search Results for ElasticNet Logistic Regression")
-plt.legend()
+print("\n--- Best Model Summary ---")
+print(f"Accuracy: {accuracy_el_final}")
+print(f"Balanced Accuracy : {balanced_accuracy_el_final}")
+print(f"Confusion Matrix:\n{conf_matrix_el}")
+print(f"Number of selected features: {len(selected_features_el)}")
+
+
+#%% ROC Curve 
+
+#Compute ROC curve and AUC
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_el)
+auc3 = roc_auc_score(y_test, y_pred_el)
+
+# Plot the ROC curve
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='b', label=f'ROC curve (AUC = {auc3:.2f})')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('ROC Curve ELASTIC NET')
+plt.legend(loc='lower right')
 plt.grid(True)
 plt.show()
 
-#%%
-
-model = LogisticRegression(
-    penalty='elasticnet',  # ElasticNet regularization
-    solver='saga',         # Solver that supports ElasticNet  # Multinomial logistic regression
-    l1_ratio=0.7,          # α (balance between L1 and L2 regularization)
-    C=0.05,
-    max_iter=1000,
-    tol=1e-3,
-    class_weight='balanced'                # Regularization strength (inverse of λ)
-)
-
-model.fit(X_train,y_train)
-y_red_elastic = model.predict(X_test)
-
-accuracy_elastic = accuracy_score(y_test,y_red_elastic)
-confusion_matrix_elastic = confusion_matrix(y_test,y_red_elastic)
-
-print(f"Accuracy :{accuracy_elastic}")
-print(f"Confusion Matrix : \n{confusion_matrix_elastic}")
-
-#%%
-selected_features_lelastic = np.where(model.coef_ != 0)[1]
-print(f"Number of selected features: {len(selected_features_lelastic)}")
 
 
 # %%
