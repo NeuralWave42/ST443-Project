@@ -28,6 +28,8 @@ from sklearn.neighbors import NearestCentroid
 from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import KFold
 from sklearn.metrics import roc_curve, roc_auc_score
+from sklearn.model_selection import StratifiedKFold
+from imblearn.over_sampling import SMOTE
 # ============================================================================
 # Question T2.1
 # ============================================================================
@@ -36,7 +38,7 @@ from sklearn.metrics import roc_curve, roc_auc_score
 os.chdir('C:/Users/emmaqueen/Documents/ST443/PROJECT/')
 current_directory = os.getcwd()
 file2 = pd.read_csv('data2.csv.gz')
-print(file2.head())
+#print(file2.head())
 
 #%%
 #SUMMARY OF OUR DATA
@@ -82,7 +84,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 X_train = X_train.astype('float32')  # Reduce memory usage
 y_train = y_train.astype('float32')
 
-
+smote = SMOTE(random_state=42)
+X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
 
 #%%
@@ -91,10 +94,13 @@ y_train = y_train.astype('float32')
 # =============================================================================
 
 
-alpha_values = np.logspace(-4, 1, 15)  # Alpha values ranging from 0.0001 to 10000
+
+alpha_values = np.logspace(-1, 1, 5)  # Alpha values ranging from 0.0001 to 10000
 best_alpha = None
 best_balanced_acc_log = 0
 mean_cv_score={}
+
+
 
 # Loop through alpha values to find the best one using cross-validation
 for alpha in alpha_values:
@@ -102,7 +108,9 @@ for alpha in alpha_values:
     model = LogisticRegression(penalty='l1', solver='saga', C=alpha, max_iter=10000, tol=1e-3, random_state=42,class_weight='balanced')
     
     # Perform cross-validation
-    cv_scores = cross_val_score(model, X, y, cv=5, scoring='balanced_accuracy')  # 5-fold cross-validation
+
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv_scores = cross_val_score(model, X_train_balanced, y_train_balanced, cv=cv, scoring='balanced_accuracy')  # 5-fold cross-validation
     
     # Compute the mean accuracy from cross-validation
     mean_cv_score[alpha] = np.mean(cv_scores)
@@ -114,7 +122,7 @@ for alpha in alpha_values:
 
 # Print the best alpha and its corresponding cross-validated accuracy
 print(f"Best alpha (C): {best_alpha}")
-print(f"Best cross-validated accuracy: {best_balanced_acc_log}")
+print(f"Best cross-validated balanced accuracy: {best_balanced_acc_log}")
 
 #%%
 # see the values of c with the cross vlaidation accuracy
@@ -122,7 +130,7 @@ print(f"Best cross-validated accuracy: {best_balanced_acc_log}")
 # Plot the results
 plt.figure(figsize=(8, 6))
 plt.semilogx(alpha_values, list(mean_cv_score.values()), marker='o')
-plt.xlabel('C = 1/lambda (Inverse of Lambda)')
+plt.xlabel('CAlpha values')
 plt.ylabel('Balanced Cross-Validation Accuracy')
 plt.title('Balanced Cross-Validation Accuracy for different valeur of Lambda')
 plt.grid(True)
@@ -173,6 +181,9 @@ plt.show()
 # Train a Random Forest classifier on all the data
 model = RandomForestClassifier(random_state=42,)
 model.fit(X_train, y_train)
+
+
+
 #%%
 # Rank the features importance
 importances = model.feature_importances_
@@ -183,34 +194,35 @@ indices = np.argsort(importances)[::-1]  # Sort in descending order
 best_k_= 0
 best_balanced_acc_tree = 0
 best_selected_features_for = None
-best_conf_matrix = None  
 num_features = []
 balanced_accuracies = []
 
 
 for k in range(1, X_train.shape[1] - 29000):
     selected_features_for = indices[:k]  # Select top k features based on importance
-    X_train_k = X_train[:, selected_features_for]
-    X_test_k = X_test[:, selected_features_for]
+    X_train_k = X_train.iloc[:, selected_features_for]
 
     # Train Random Forest with k features
     model_k = RandomForestClassifier(random_state=42,n_estimators=20,max_features='log2',class_weight='balanced',max_depth=10)
-    model_k.fit(X_train_k, y_train)
-    y_pred_k = model_k.predict(X_test_k)
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    cv_scores = cross_val_score(model_k, X_train_k, y_train, cv=cv, scoring='balanced_accuracy') 
 
-    
-    balanced_acc_k = balanced_accuracy_score(y_test, y_pred_k)
-    conf_matrix_k = confusion_matrix(y_test, y_pred_k)
+
+    avg_cv_score = np.mean(cv_scores)
     num_features.append(k)
-    balanced_accuracies.append(balanced_acc_k)
+    balanced_accuracies.append(avg_cv_score)
 
     # Check if the accuracy is better tha the one before
-    if balanced_acc_k > best_balanced_acc_tree:
-        best_k = k
-        best_balanced_acc_tree = balanced_acc_k
-        best_selected_features_for = selected_features_for
-        best_conf_matrix = conf_matrix_k  # Store confusion matrix for the best model
-        y_pred_best = y_pred_k
+    if avg_cv_score >best_balanced_acc_tree:
+        best_k = k 
+        best_balanced_acc_tree = avg_cv_score 
+        best_selected_features = selected_features_for
+
+
+print(f"Optimal Number of Features: {best_k}")
+print(f"The bast balanced accuracy for the cross validation is : {best_balanced_acc_tree}")
+
+
 
 #%% PLOT THE NB OF FEATURES VS BALANCED ACCURACY 
 
@@ -223,11 +235,26 @@ plt.grid(True)
 plt.show()
 
 #%%
+
+X_train_best = X_train.iloc[:, best_selected_features] 
+X_test_best = X_test.iloc[:, best_selected_features]
+
+
+model_best = RandomForestClassifier(random_state=42, n_estimators=20, max_features='log2', class_weight='balanced', max_depth=10) 
+model_best.fit(X_train_best, y_train) 
+y_pred_best = model_best.predict(X_test_best)
+
+
+
+best_bal_acc_final = balanced_accuracy_score(y_test, y_pred_best) 
+conf_matrix_best = confusion_matrix(y_test, y_pred_best)
+
+
 # Print the results
 print("\n--- Best Model Summary ---")
-print(f"Optimal Number of Features: {best_k}")
-print(f"Best Balanced Accuracy: {best_balanced_acc_tree:.4f}")
-print(f"Best Confusion Matrix:\n{best_conf_matrix}")
+print(f"Best Balanced Accuracy: {best_bal_acc_final:.4f}")
+print(f"Best Confusion Matrix:\n{conf_matrix_best}")
+print(f"For the final model we have {best_k} features")
 
 #%%
 #Compute ROC curve and AUC
