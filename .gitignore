@@ -18,3 +18,6 @@ Thumbs.db
 
 # Ignore .gitignore
 .gitignore
+
+#Ignore the data file
+data2.csv.gz
