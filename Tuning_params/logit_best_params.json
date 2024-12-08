@@ -1,0 +1,7 @@
+{
+    "logit__C": 0.601,
+    "logit__class_weight": "balanced",
+    "logit__l1_ratio": 0.8,
+    "MODEL_NAME": "logit",
+    "TIME_ELAPSED_MIN": 27.07769933541616
+}
