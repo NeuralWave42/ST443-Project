@@ -1,7 +1,8 @@
 \documentclass{article}
 
-\usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{hyperref}
 
 \usepackage{graphicx} % Required for inserting images
 \usepackage{algpseudocodex}
@@ -9,22 +10,42 @@
 \usepackage[preprint]{neurips_2024}
 \begin{document}
 
-\section{Preliminary data analysis}
-
-TO DO LIST:
+\section{TO DO LIST:}
 \begin{itemize}
-    \item Basic summary stats? Size and shape of the dataset
-    \item Class balance
-    \item Sparsity or something like that?
-    \item For plots, we could try biplot, check if I understood Milan's explanation?
     \item The nicest we can do is reduce the dimensionality to 2 factors and plot by hue class. 
     Or just pick 2 first factors from pca.
     \item More importantly we need some kind of scree plot. To justify working on the PCA. Implementation of the scree plot. We can 
     jsut add the components explained variance with cumsum and it works.
     \item Correct way to use t-sne if we have space is to plot different perplexities.
-    \item Tough to do what shak is doing with pca https://scikit-learn.org/1.5/auto_examples/compose/plot_digits_pipe.html
-\end{itemize}
+    \item Tough to do what shak is doing with pca \href{https://scikit-learn.org/1.5/auto_examples/compose/plot_digits_pipe.html}{Example from sklearn}
 
+\end{itemize}
+\section{Preliminary data analysis}
+
+\subsection{Basic facts}
+We have a dataset that consists of 5471 (n) samples with 4124 (p) columns. The features of our data are all continuous, in a logarithmic scale and they expression levels 
+for genes. It is worth mentioning that the dataset is sparse, that is, a lot of cells have many gene expressions that are 0. While it is hard to have an objective measure
+of sparsity we can plot average gene expression levels across all our features, see Figure \ref{fig:hist_sparse} below, most genes are non zero for a limited number of cells.
+
+\begin{figure}[h]
+
+    
+    \caption{Possible figure of average gene expression level across all genes. We can do either histogram or histogram by label.}\label{fig:hist_sparse}
+\end{figure}
+
+
+We have 2 distinct classes of cells, the TREG cells and the 
+CD4+T cells. These are going to be our labels that we want to classify. We have some class imbalance, the ratio is 6/10 in favour of the CD4+T 
+which is the dominant class. This is going to be important for the models we try to tune as some models have options to adjust for class imbalance.
+We will also try the option of tuning the threshold decision for classifying to one cell or another. By default the probabilistic models in Scikit-learn
+classify to the positive class if the conditional probability for the given model $\mathbb{P}(\textit{y}|X) > 0.5$, \href{https://scikit-learn.org/1.5/modules/classification_threshold.html}{see scikit references}. 
+We will tinker with this threshold give our class imbalance.  
+
+\subsection{Visualization and dimensionality redcution}
+
+Both the fact that $n \approx p$ and the fact that the data is sparse point us towards using towards using regularization.
+
+Make sure we explain why it doesn't work.
 
 \section{Training baseline models and hypertuning}
 
