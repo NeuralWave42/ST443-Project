@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+qda,0.36712328767123287,0.5,0.5,0.5370741482965932,"[[0, 693], [0, 402]]"

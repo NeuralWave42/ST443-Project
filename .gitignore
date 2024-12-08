@@ -6,7 +6,6 @@ __pycache__/
 *.pyc
 
 # Ignore data files
-*.csv
 *.gz
 
 # Ignore model artifacts
