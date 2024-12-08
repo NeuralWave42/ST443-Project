@@ -1,6 +1,6 @@
 # Ignore directories
 Personal/
-Datasets/Decompressed/
+Datasets/
 
 # Ignore Python cache files
 __pycache__/
