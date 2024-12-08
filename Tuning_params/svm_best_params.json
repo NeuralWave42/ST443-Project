@@ -1,8 +1,8 @@
 {
-    "svm__C": 0.901,
+    "svm__C": 0.601,
     "svm__class_weight": "balanced",
     "svm__gamma": "scale",
     "svm__kernel": "sigmoid",
     "MODEL_NAME": "svm",
-    "TIME_ELAPSED_MIN": 55.44311033089956
+    "TIME_ELAPSED_MIN": 54.64659243424733
 }

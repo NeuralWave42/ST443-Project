@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+svm_pca,0.965296803652968,0.9637042062415198,,0.9529702970297029,"[[672, 21], [17, 385]]"

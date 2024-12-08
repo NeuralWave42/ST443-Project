@@ -1,0 +1,9 @@
+{
+    "pca__n_components": 20,
+    "svm_pca__C": 1,
+    "svm_pca__class_weight": "balanced",
+    "svm_pca__gamma": "scale",
+    "svm_pca__kernel": "rbf",
+    "MODEL_NAME": "svm_pca",
+    "TIME_ELAPSED_MIN": 0.9320990443229675
+}

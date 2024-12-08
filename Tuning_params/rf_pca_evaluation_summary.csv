@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+rf_pca,0.958904109589041,0.9487303741035085,0.9889046829345336,0.9420849420849421,"[[684, 9], [36, 366]]"

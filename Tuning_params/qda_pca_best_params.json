@@ -1,0 +1,6 @@
+{
+    "pca__n_components": 20,
+    "qda_pca__reg_param": 0.5,
+    "MODEL_NAME": "qda_pca",
+    "TIME_ELAPSED_MIN": 0.14685566822687784
+}

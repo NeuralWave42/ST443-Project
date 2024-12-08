@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+logit_pca,0.965296803652968,0.964748766987573,0.9942567106746212,0.9532019704433498,"[[670, 23], [15, 387]]"

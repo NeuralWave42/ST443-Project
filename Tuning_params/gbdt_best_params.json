@@ -1,8 +1,8 @@
 {
     "gbdt__learning_rate": 0.1,
     "gbdt__max_depth": 3,
-    "gbdt__max_features": 100,
-    "gbdt__n_estimators": 200,
+    "gbdt__max_features": "sqrt",
+    "gbdt__n_estimators": 400,
     "MODEL_NAME": "gbdt",
-    "TIME_ELAPSED_MIN": 18.801121481259663
+    "TIME_ELAPSED_MIN": 17.624990014235177
 }

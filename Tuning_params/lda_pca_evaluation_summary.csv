@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+lda_pca,0.9506849315068493,0.9370140638797355,0.993599821958031,0.9295039164490861,"[[685, 8], [46, 356]]"
