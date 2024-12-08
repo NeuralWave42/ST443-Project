@@ -2,5 +2,5 @@
     "lda__shrinkage": 0.8,
     "lda__solver": "lsqr",
     "MODEL_NAME": "lda",
-    "TIME_ELAPSED_MIN": 5.902624400456746
+    "TIME_ELAPSED_MIN": 5.616216067473093
 }
