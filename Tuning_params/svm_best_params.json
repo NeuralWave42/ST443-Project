@@ -4,5 +4,5 @@
     "svm__gamma": "scale",
     "svm__kernel": "sigmoid",
     "MODEL_NAME": "svm",
-    "TIME_ELAPSED_MIN": 54.64659243424733
+    "TIME_ELAPSED_MIN": 270.91194452047347
 }

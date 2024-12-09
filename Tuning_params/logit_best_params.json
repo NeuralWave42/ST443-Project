@@ -3,5 +3,5 @@
     "logit__class_weight": null,
     "logit__l1_ratio": 0.7,
     "MODEL_NAME": "logit",
-    "TIME_ELAPSED_MIN": 26.732572197914124
+    "TIME_ELAPSED_MIN": 26.20909588734309
 }

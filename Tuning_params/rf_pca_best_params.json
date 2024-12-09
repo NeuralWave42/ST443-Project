@@ -1,8 +1,8 @@
 {
     "pca__n_components": 20,
     "rf_pca__criterion": "entropy",
-    "rf_pca__max_features": "sqrt",
-    "rf_pca__n_estimators": 200,
+    "rf_pca__max_features": "log2",
+    "rf_pca__n_estimators": 300,
     "MODEL_NAME": "rf_pca",
-    "TIME_ELAPSED_MIN": 0.7359041531880697
+    "TIME_ELAPSED_MIN": 0.7374971191088359
 }

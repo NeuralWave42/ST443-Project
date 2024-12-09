@@ -2,5 +2,5 @@
     "lda_pca__solver": "svd",
     "pca__n_components": 20,
     "MODEL_NAME": "lda_pca",
-    "TIME_ELAPSED_MIN": 0.13753524621327717
+    "TIME_ELAPSED_MIN": 0.15639211734135947
 }

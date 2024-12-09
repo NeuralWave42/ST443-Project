@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+stacking_pca_gradientboostingclassifier,0.9643835616438357,0.9593267429088325,0.9941274866648,0.9509433962264151,"[[678, 15], [24, 378]]"

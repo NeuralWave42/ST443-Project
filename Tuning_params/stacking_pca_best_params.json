@@ -1,0 +1,6 @@
+{
+    "pca__n_components": 25,
+    "stacking_pca__final_estimator": "LogisticRegression(max_iter=500)",
+    "MODEL_NAME": "stacking_pca",
+    "TIME_ELAPSED_MIN": 0.6404516021410624
+}

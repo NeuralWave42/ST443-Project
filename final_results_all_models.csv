@@ -1,0 +1,8 @@
+Model,Error,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+ada_boost_no_pca,The 'estimator' parameter of AdaBoostClassifier must be an object implementing 'fit' and 'predict' or None. Got 'DecisionTreeClassifier(max_depth=2)' instead.,,,,,
+ada_boost_pca,The 'estimator' parameter of AdaBoostClassifier must be an object implementing 'fit' and 'predict' or None. Got 'LogisticRegression()' instead.,,,,,
+voting_no_pca,,0.9625570776255707,0.957883741465831,0.993341373938389,0.9485570890840652,"[[676, 17], [24, 378]]"
+voting_pca,,0.9680365296803652,0.962735026167862,0.9942890166770764,0.9558638083228247,"[[681, 12], [23, 379]]"
+bagging,The 'estimator' parameter of BaggingClassifier must be an object implementing 'fit' and 'predict' or None. Got 'LogisticRegression()' instead.,,,,,
+elasticnet_logit_pca,,0.971689497716895,0.9677101505459715,0.9945366960292332,0.9611041405269761,"[[681, 12], [19, 383]]"
+stacking_pca_gradientboostingclassifier,,0.9643835616438357,0.9593267429088325,0.9941274866648,0.9509433962264151,"[[678, 15], [24, 378]]"

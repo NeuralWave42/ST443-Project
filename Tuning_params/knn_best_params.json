@@ -3,5 +3,5 @@
     "knn__p": 10.0,
     "knn__weights": "distance",
     "MODEL_NAME": "knn",
-    "TIME_ELAPSED_MIN": 114.52505450248718
+    "TIME_ELAPSED_MIN": 118.73440551757812
 }

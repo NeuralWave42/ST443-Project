@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+voting_pca,0.9680365296803652,0.962735026167862,0.9942890166770764,0.9558638083228247,"[[681, 12], [23, 379]]"

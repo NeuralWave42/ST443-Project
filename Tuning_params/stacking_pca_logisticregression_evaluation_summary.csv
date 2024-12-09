@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
+stacking_pca_logisticregression,0.971689497716895,0.968232430918998,0.9946838678181962,0.9612015018773467,"[[680, 13], [18, 384]]"

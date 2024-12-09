@@ -3,5 +3,5 @@
     "rf__max_features": "sqrt",
     "rf__n_estimators": 300,
     "MODEL_NAME": "rf",
-    "TIME_ELAPSED_MIN": 1.679293938477834
+    "TIME_ELAPSED_MIN": 1.741478697458903
 }

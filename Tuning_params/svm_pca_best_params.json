@@ -5,5 +5,5 @@
     "svm_pca__gamma": "scale",
     "svm_pca__kernel": "rbf",
     "MODEL_NAME": "svm_pca",
-    "TIME_ELAPSED_MIN": 0.9320990443229675
+    "TIME_ELAPSED_MIN": 1.9700221021970112
 }

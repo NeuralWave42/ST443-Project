@@ -1,0 +1,6 @@
+{
+    "bagging__estimator": "LogisticRegression()",
+    "bagging__n_estimators": 50,
+    "MODEL_NAME": "bagging",
+    "TIME_ELAPSED_MIN": 2.834372913837433
+}

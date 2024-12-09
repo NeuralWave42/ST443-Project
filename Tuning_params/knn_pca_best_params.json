@@ -1,8 +1,8 @@
 {
     "knn_pca__n_neighbors": 3,
     "knn_pca__p": 2,
-    "knn_pca__weights": "distance",
+    "knn_pca__weights": "uniform",
     "pca__n_components": 10,
     "MODEL_NAME": "knn_pca",
-    "TIME_ELAPSED_MIN": 0.31494230031967163
+    "TIME_ELAPSED_MIN": 0.30652381579081217
 }
