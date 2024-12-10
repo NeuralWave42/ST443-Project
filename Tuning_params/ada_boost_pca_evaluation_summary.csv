@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,F1 Score,AUC,Confusion Matrix
+ada_boost_pca,0.9625570776255707,0.9594505825849109,0.9489414694894147,0.9730478200627456,"[[673, 20], [21, 381]]"

@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,F1 Score,AUC,Confusion Matrix
+svm,0.9561643835616438,0.952833236415326,0.9402985074626866,,"[[669, 24], [24, 378]]"

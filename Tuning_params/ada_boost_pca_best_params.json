@@ -1,0 +1,8 @@
+{
+    "ada_boost_pca__estimator": "LogisticRegression()",
+    "ada_boost_pca__learning_rate": 0.05,
+    "ada_boost_pca__n_estimators": 200,
+    "pca__n_components": 20,
+    "MODEL_NAME": "ada_boost_pca",
+    "TIME_ELAPSED_MIN": 1.6473555326461793
+}
