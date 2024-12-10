@@ -1,0 +1,2 @@
+Model,Accuracy,Balanced Accuracy,F1 Score,AUC,Confusion Matrix
+gbdt,0.9634703196347032,0.9549492795761452,0.948849104859335,0.9942997853445615,"[[684, 9], [31, 371]]"
