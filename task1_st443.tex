@@ -16,42 +16,39 @@
 \begin{document}
 \graphicspath{ {Figures/} }
 
-\section{1.1 Exploratory data analysis}
-
-\textbf{REMOVE THESE AUTOMATIC INDICES FROM OVERLEAF CAN BE CONFUSING}
-\textbf{WE SHOULD HAVE AN ABSTRACT, add citations as well, website and book from my part.}
+\section*{T1.1 Exploratory data analysis}
 
 
-\subsection{Basic facts}
-We have a dataset that consists of 5471 (n) samples with 4124 (p) columns. The features of our data are all continuous, in a logarithmic scale and they expression levels 
-for genes. It is worth mentioning that the dataset is sparse, that is, a lot of cells have many gene expressions that are 0. While it is hard to have an objective measure
-of sparsity we can plot average gene expression levels across all our features, see Figure \ref{fig:hist_sparse} below, most genes are non zero for a limited number of cells.
+
+\subsection*{Basic facts}
+We have a dataset that consists of 5471 (n) samples with 4124 (p) columns. The features of our data are all continuous, in a logarithmic scale and they consist of expression levels 
+for genes. It is worth mentioning that the dataset is sparse, that is, a lot of cells have many gene expressions that are 0 
+\footnote{While it is hard to have an objective measure of sparsity we can compute the percentage of zeros for each type. It is high for most genes. The plot is relegated to the notebook.}.
 
 
 
 We have 2 distinct classes of cells, the TREG cells and the CD4+T cells. 
-These are going to be our labels that we want to classify. We have some class imbalance, the ratio is 6/10 in favour of the CD4+T, 
-which is the dominant class. This is going to be important for the models we try to tune as some models have options to adjust for class imbalance.
-We will also try the option of tuning the threshold decision for classifying to one cell or another. By default the probabilistic models in Scikit-learn
-classify to the positive class if the conditional probability for the given model $\mathbb{P}(\textit{y}|X) > 0.5$\footnote{\href{https://scikit-learn.org/1.5/modules/classification_threshold.html}{see scikit references}}. 
+Our classification task consists of prediciting the cell type. We have some class imbalance, the ratio is 6/10 in favour of the CD4+T, 
+which is the dominant class. We try the option of tuning the threshold for classifying to one cell or another. By default the probabilistic models in Scikit-learn
+classify to the positive class if the conditional probability for the given model $\mathbb{P}(\textit{y}|X) > 0.5$\footnote{See scikit references on \href{https://scikit-learn.org/1.5/modules/classification_threshold.html}{threshold tuning}.}. 
 We will tinker with this threshold to try to optimize the F1-Score given our class imbalance.  
 
-\subsection{Visualization and dimensionality redcution}
+\subsection*{Visualization and dimensionality redcution}
 
-Both the fact that $n \approx p$ and the fact that the data is sparse point us towards using towards using regularization and feature selection.
+Both the fact that $n \approx p$ and the fact that the data is sparse, point us towards using regularization and feature selection.
 The instructions for this problem also make us use PCA with 10 components. To confirm whether the number of components is optimal, we can plot the cumulative sum of the explained variance by each of the components.
-As you can see below in Figure \ref{fig:scree}, choosing just the first ten components makes us use a very amount of the total variance.
-In Section \ref{sec:1.3} we will try to tune the number of components to get an improved F1-Score.
+While the plot is relegated to the notebook, choosing the first ten components makes us use only 9 percent of the original variation.
+In Section \ref{sec:1.3} we try to tune the number of components to get an improved F1-Score.
 
-\begin{figure}[h]
-    \centering
-    \includegraphics[width=0.8\textwidth]{t11_screeplot.pdf}
-    \caption{Scree plot: cumulative sum of PCA components.}\label{fig:scree}
-\end{figure}
+% \begin{figure}[h]
+%     \centering
+%     \includegraphics[width=0.8\textwidth]{t11_screeplot.pdf}
+%     \caption{Scree plot: cumulative sum of PCA components.}\label{fig:scree}
+% \end{figure}
 
 For completeness, we add Figure \ref{fig:tsne} where we use t-SNE to reduce the dimensionality of the data from 4124 to 2\footnote{ The underlying algorithm is stochastic 
-and quite sensitive to how we tune the hyperparameter of perplexity} with the purpose of visualizing the joint distribution (after the t-SNE transformation) of both cells. 
-Figure \ref{fig:tsne} shows some separability of the two classes. It also shows some cells of a given clas (TREG) in regions where the density is much higher for the other type of cell (CD4T), maybe we can use this as intuition as to why
+and quite sensitive to how we tune the hyperparameter of perplexity}. We do this with the purpose of visualizing the joint distribution (after the t-SNE transformation) of both cells. 
+Figure \ref{fig:tsne} shows some separability between the two classes. It also shows some cells of a given class (TREG) in regions where the density is much higher for the other type of cell (CD4T), maybe we can use this as intuition as to why
 in later sections we find it difficult to improve the F1-Score beyond 0.95.
 
 
@@ -64,61 +61,62 @@ in later sections we find it difficult to improve the F1-Score beyond 0.95.
 % Correct way to use t-sne if we have space is to plot different perplexities. TRY DO IT AND JUST MENTION IT IN A NOTE.
 % \section{Training baseline models and hypertuning}
 
-\section{1.2 Training, tuning and evaluating baseline models.}
+\section*{T1.2 Training, tuning and evaluating baseline models}
 This section is split into two parts, the first part describes our code from Python at a high-level. It focuses on some of scikit-learn procedures to streamline the analysis 
-and guarantee good test performance. Then we move to explain which parameters we tune to improve the performance of the baseline models.
+and guarantee good test performance.\footnote{We believe learning how to use scikit learn "properly" was one of the most valuable things we learnt in Task 1.} Then we move to explain which parameters we tune to improve the performance of the baseline models.
 
-\subsection{Using the scikit-learn toolkit.}
-Because we are going do to some hyperparameter tuning we first need to split the data into a test and train subset -this is needed because we tuned some hyperparameters, if not an estimate of test error obtained through cross validation should be valid -\footnote{The \href{https://scikit-learn.org/1.5/modules/cross_validation.html}{scikit documentation} contain a very understandable graph of the workflow.}
+\subsection*{Using the scikit-learn toolkit}
+Because we implement hyperparameter tuning we first need to split the data into a test and train subset -this is needed because we tuned some hyperparameters, if not an estimate of test error obtained through cross validation should be valid -\footnote{See scikit references on \href{https://scikit-learn.org/1.5/modules/cross_validation.html}{train, test and hyperparameter tuning.}}
 
-To do the hyperparameter tuning we implemented grid search\footnote{The scikit documentation on \href{https://scikit-learn.org/1.5/modules/grid_search.html}{grid search.}
+To do the hyperparameter tuning we implement grid search\footnote{See scikit referemces on \href{https://scikit-learn.org/1.5/modules/grid_search.html}{grid search.}
 } which is a brute force approach that consists of trying all hyperparameter combinations specified by the researcher. 
-We use the training set for a given set of parameters, we use cross validation -a part of our training data is left out as a validations set, the model is trained on the rest of the training data and we get a validation error estimate, this process is repeated 5 times - and obtain an estimate of the metric we are trying to optimize over.
-We iterate over all parameter combinations and pick the one that maximizes the metric we choose (in part 1 it was F1 score).
+We use the training set for a given set of parameters, then use cross validation -a part of our training data is left out as a validations set, the model is trained on the rest of the training data and we get a validation error estimate, this process is repeated 5 times - and obtain an estimate of the metric we are trying to optimize over.
+We iterate over all parameter combinations and pick the one that maximizes the metric we choose (in Task 1 it was F1 score).
 
-Some models need the data to be standarized, and we are also asked to use PCA, we therefore make use of pipelines \footnote{The scikit library has great documentation:
-\href{https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html}{Pipeline} includes some case uses.}, which are a sequence of data preprocessing steps with a final estimator. Using this 
+Some models need the data to be standarized, and we are also asked to use PCA, we therefore make use of pipelines \footnote{See scikit references on
+\href{https://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html}{pipelines}.}, which are a sequence of data pre-processing steps with a final estimator. Using pipelines 
 streamlines our analysis and avoids some \href{https://scikit-learn.org/stable/common_pitfalls.html}{common pitfalls.}
-Example: Our cross validation estimator has selected a random subset of the training data, then the pipeline will: Standarize the data $\rightarrow$ Apply PCA $\rightarrow$ Fit the classifier on the preprocessed data.
+Example of a pipeline: Our cross validation estimator has selected a random subset of the training data, then the pipeline will: Standarize the data $\rightarrow$ Apply PCA $\rightarrow$ Fit the classifier on the preprocessed data.
 
-Finally, throughout our analysis we tried to set a random seed so that our results are reproducible. We forgot about randomness in the PCA algorithm used by scikit-learn, while the exact numbers may change, the overall picture and decision making is not affected.
+Finally, throughout our analysis we tried to set a random seed so that our results are reproducible. However we forgot about randomness in the PCA algorithm used by scikit-learn, while the exact numbers may change, the overall picture and decision making is not affected.
 
-\subsection{Hyperparameter tuning the baseline models.}
+\subsection*{Hyperparameter tuning the baseline models}
 We focus on tuning the models without PCA, as that is where most of the gains can be made. Due to the relatively high dimensionality of the
-data some models are underperfoming if we use all the features avalable. In contrast even the out-of-the-box models without hyperparameter tuning 
+data, some models are underperfoming if we use all the features avalable. In contrast even the out-of-the-box models without hyperparameter tuning 
 perform really well when training on the first 10 components of the PCA. Therefore we compare the tuned models without PCA to the untuned models with PCA. 
 Next we show what we tuned and the results we obtained.
 
-\subsubsection{What did we tune?}
+\subsubsection*{What did we tune?}
 
-For the first 3 models -\textit{LDA, Logistic regression and QDA}- the tuning is mostly focused on imposing strong penalization mechanisms, such as lasso, ridge or elastic net.
+For the first 3 models -\textit{LDA, Logistic regression} and \textit{QDA}- the tuning is mostly focused on imposing strong penalization mechanisms, such as lasso, ridge or elastic net.
 
 For \textit{k-NN}, there are a lot of interesting parameters. We search across different numbers of neighbors. We also tune across rules to determine who the nearest
 neighbors are. To achieve this we use the Minkowski(p) distance, this is a distance that nests the classical euclidean (Minkowski($p_1$)) and manhattan distances (Minkowski($p_2$)), so we search across p to try different distances.
-Finally we also try to compute the decision rule in different weights, the default where all neighbors have the same weight in the vote and one where the votes from the closest neighbors within the neighborhood carry more weight.
+Finally we also try to compute the decision rule using different weights, the default where all neighbors have the same weight in the vote and one where the votes from the closest neighbors within the neighborhood carry more weight.
 
-For \textit{Support Vector Machine}, we tune across different kernels and regularization strenghts. The default uses the radial/gaussin kernel, we also try to use linear kernels as well as some others we haven't seen in class.
+For \textit{Support Vector Machine}, we tune across different kernels and regularization strenghts. 
+The default uses the radial/gaussian kernel, we also try to use linear kernels as well as some others we haven't seen in class.
 
 For \textit{Random Forests} our grid search is not extensive, we tune the criterion made to determine the quality of a split (gini and entropy), the number of trees in the forest and the number of features a tree in the forest will choose from.
-It is worth mentioning that we considered pruning, as we saw the method in class, however we decide against it as it would be computationally expensive.
+It is worth mentioning that we consider pruning, as we saw the method in class, however we decide against it as it would be computationally expensive.
 
 For \textit{Gradient Boosted Decision Trees (GBDT)} we consider different loss functions, number of iterations, learning rates, as well as the depth and features used by the trees. 
 We also set an early stopping rule as this grid search is computationally expensive.
 For other models the tuning parameters are mostly self explanatory, in this case it is more complex.
 For intuition let us remember that this is similar to AdaBoost, learning determines how new iterations influence the final vote and the tree complexity should be tuned to avoid overfitting.
 If we run too many iterations with a deep tree we might overfit, while if we run too few iterations on shallow trees, our performance may be suboptimal.
-Finding the optimal between iterations, learning and tree complexity is complex.
+Finding the optimal between iterations, learning and tree complexity is hard.
 
-Finally, across our tuning, we  use tuning paramters related to class weights were available. As while the classes are not as imbalanced as in Task 2, there is some imbalance in favour of the CD4+T.
+Finally, across our tuning, we  use tuning paramters related to class weights. As while the classes are not as imbalanced as in Task 2, there is some imbalance in favour of the CD4+T cell type.
     
 
 
-\subsubsection{Analysis of results}
+\subsubsection*{Analysis of results}
 
-We compare our fully tuned models without PCA to out of the box models with PCA. As you can see from Table 1 below
+We compare our fully tuned models without PCA to out of the box models with PCA. As you can see from Table 1,
 out-of-box with PCA have similar or better performance to the ones we fully tune without PCA.
 The models most affected by PCA are LDA, QDA and \textit{k-NN}. Using PCA improves the perfomance of QDA and K-NN dramatically. 
-For Logistic regression and LDA, the performance is not improved too much as the optimal models from the tuning already contain severe forms of regularization,
+For Logistic regression and LDA, the performance is not improved too much. That is because the optimal models from the hyperparameter tuning already contain severe forms of regularization,
 which is very similar in spirit to what PCA is doing. SVM is consistently great. Random forest gets a small improvement from the PCA and GBDT lowers the performance slightly,
 although both these models are consistent in making very good predictions.
 
@@ -151,23 +149,45 @@ although both these models are consistent in making very good predictions.
 
 
 
-\section{Our 3 models} \label{sec:1.3}
-We tried 3\footnote{We tried more than 3 but settled on these 3 because they showcase very different methods.} simple approaches of some things
-we saw in class and from our learning in the baseline models. We implemented the AdaBoost from class and tuned it, tinkered with the decision thresholds and we 
-tried different numbers of PCA components with an out-of-box SVM. None of our approaches let us \textbf{consistenly} improve to F1 scores of 0.96 or 0.97
+\section*{T1.3 Our 3 models} \label{sec:1.3}
+We try 3\footnote{We tried more than 3 but settled on these 3 because they showcase very different methods.} simple approaches guided by models
+we saw in class and from our experience with the baseline models. We implement AdaBoost, tinker with the decision thresholds and try different numbers of PCA components with an out-of-box SVM. None of our approaches let us \textbf{consistenly} improve to F1 scores of 0.96 or 0.97
 \footnote{Due to this we omit showing these results, they can be found in the notebook for completeness.}. 
 
-\begin{itemize}
-    \item AdaBoost, just because we have seen it in class and it could be interesting.
-    \item Threshold optimization: https://towardsdatascience.com/tune-in-decision-threshold-optimization-with-scikit-learns-tunedthresholdclassifiercv-7de558a2cf58
-    \item SVM with pca optimization.
-\end{itemize}
+\subsection*{Tuned AdaBoost}
+We tune an AdaBoost model with different baseline estimators and changes in the parameters related to learning rate and others.
+The most interesting modification is the choice of baseline estimator, we used the default stubs, trees with a maximum depth of 2 and logistic regression. 
+Across these methods the logistic regression is the baseline estimator with best results, having said this, it also required a small number of iterations and a low learning rate. 
+This can be due to the fact that as Logistic regression is a more powerful base estimator, it can be prone to overfit.
 
+\subsection*{Threshold tuning}
+Because even out-of-box models where giving very good results we tried to think out of the box and tune something completely different.
+All models in scikit-learn classify to a given label when a conditional probability is larger than 0.5 (something similar happens for non probabilistic models). 
+Given our class imbalance we can use a trained model and use cross validation to optimize over this threshold. 
+In Figure \ref{fig:thresh_rf} we can see how it improves the F1 score of a random forest. While this approach yields great results in Task 2, here our estimators were 
+very robust to threshold modification, meaning the F1 scores are mostly flat around the default threshold.\footnote{
+    This could have to do with how we grid searched -trying to maximize F1 score- or due to the imbalance between classes not being too large.
+    The code for the graph below is taken and modified from the following \href{https://towardsdatascience.com/tune-in-decision-threshold-optimization-with-scikit-learns-tunedthresholdclassifiercv-7de558a2cf58}{towardsdatascience article.}
+}
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{RF_THRESHOLD_DEF.png}
     \caption{Thresholding example with a random forest model.}\label{fig:thresh_rf}
 \end{figure}
-\subsection{Our final predictor:}
+
+\subsection*{Tuning the number of principal components}
+For this minimalistic approach we take an out-of-box SVM (radial kernel) and we tune the number of principal components it takes as an input.
+We wanted to focus on this one dimension of the analysis on one of our best performing models. The optimal number of components was 22 
+but it didn't yield us greatly improved results. Another option would have been to use a model that struggled without PCA and to see how its performance changed.
+
+
+\section*{T1.4 Final predictor}
+Many models give very similar F1 scores, these models are very different in nature. 
+And due to the inherent randomness we can't be sure which model will work best in the the left out test sample.
+The biggest thing we can control is to train the model on \textbf{all} the data we have available. 
+For this final predictor the full dataset we have available becomes our training set.
+We use an out-of-box SVM with 22 principal components as our final estimator, this is because the SVM has given us consistenly great results throughout our analysis.
+
+
 
 \end{document}
