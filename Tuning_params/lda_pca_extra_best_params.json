@@ -1,0 +1,5 @@
+{
+    "pca__n_components": 600,
+    "MODEL_NAME": "lda_pca_extra",
+    "TIME_ELAPSED_MIN": 0.9349535504976908
+}

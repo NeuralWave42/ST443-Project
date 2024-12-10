@@ -1,0 +1,5 @@
+{
+    "pca__n_components": 400,
+    "MODEL_NAME": "logit_pca_extra",
+    "TIME_ELAPSED_MIN": 0.8596405982971191
+}

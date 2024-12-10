@@ -1,0 +1,5 @@
+{
+    "pca__n_components": 29,
+    "MODEL_NAME": "svm_pca",
+    "TIME_ELAPSED_MIN": 0.15584368308385213
+}
