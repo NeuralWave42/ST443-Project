@@ -1,0 +1,5 @@
+{
+    "pca__n_components": 22,
+    "MODEL_NAME": "svm_pca_finetune_extra",
+    "TIME_ELAPSED_MIN": 0.250522251923879
+}
