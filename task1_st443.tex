@@ -33,8 +33,8 @@ of sparsity we can plot average gene expression levels across all our features, 
 \end{figure}
 
 
-We have 2 distinct classes of cells, the TREG cells and the 
-CD4+T cells. These are going to be our labels that we want to classify. We have some class imbalance, the ratio is 6/10 in favour of the CD4+T 
+We have 2 distinct classes of cells, the TREG cells and the CD4+T cells. 
+These are going to be our labels that we want to classify. We have some class imbalance, the ratio is 6/10 in favour of the CD4+T, 
 which is the dominant class. This is going to be important for the models we try to tune as some models have options to adjust for class imbalance.
 We will also try the option of tuning the threshold decision for classifying to one cell or another. By default the probabilistic models in Scikit-learn
 classify to the positive class if the conditional probability for the given model $\mathbb{P}(\textit{y}|X) > 0.5$\footnote{\href{https://scikit-learn.org/1.5/modules/classification_threshold.html}{see scikit references}}. 
@@ -88,28 +88,63 @@ Example: Our cross validation estimator has selected a random subset of the trai
 Finally, throughout our analysis we set a random seed so that our results are reproducible.
 
 \subsection{Hyperparameter tuning the baseline models.}
-
-
+We focus on tuning the models without PCA, as that is where most of the gains can be made. Due to the relatively high dimensionality of the
+data some models are underperfoming if we use all the features avalable. In contrast even the out-of-the-box models without hyperparameter tuning 
+perform really well when training on the first 10 components of the PCA. Therefore we compare the tuned models without PCA to the untuned models with PCA. 
+Next we show what we tuned and the results we obtained.
 
 \subsubsection{What did we tune?}
 
+For the first 3 models -\textit{LDA, Logistic regression and QDA}- the tuning is mostly focused on imposing strong penalization mechanisms, such as lasso, ridge or elastic net.
+
+For \textit{k-NN}, there are a lot of interesting parameters. We search across different numbers of neighbors. We also tune across rules to determine who the nearest
+neighbors are. To achieve this we use the Minkowski(p) distance, this is a distance that nests the classical euclidean (Minkowski($p_1$)) and manhattan distances (Minkowski($p_2$)), so we search across p to try different distances.
+Finally we also try to compute the decision rule in different weights, the default where all neighbors have the same weight in the vote and one where the votes from the closest neighbors within the neighborhood carry more weight.
+
+For \textit{Support Vector Machine}, we tune across different kernels and regularization strenghts. The default uses the radial/gaussin kernel, we also try to use linear kernels as well as some others we haven't seen in class.
+
+For \textit{Random Forests} our grid search is not extensive, we tune the criterion made to determine the quality of a split (gini and entropy), the number of trees in the forest and the number of features a tree in the forest will choose from.
+It is worth mentioning that we considered pruning, as we saw the method in class, however we decide against it as it would be computationally expensive.
+
+For \textit{Gradient Boosted Decision Trees (GBDT)} we consider different loss functions, number of iterations, learning rates, as well as the depth and features used by the trees. 
+We also set an early stopping rule as this grid search is computationally expensive.
+For other models the tuning parameters are mostly self explanatory, in this case it is more complex.
+For intuition let us remember that this is similar to AdaBoost, learning determines how new iterations influence the final vote and the tree complexity should be tuned to avoid overfitting.
+If we run too many iterations with a deep tree we might overfit, while if we run too few iterations on shallow trees, our performance may be suboptimal.
+Finding the optimal between iterations, learning and tree complexity is complex.
+
+Finally, across our tuning, we  use tuning paramters related to class weights were available. As while the classes are not as imbalanced as in Task 2, there is some imbalance in favour of the CD4+T.
+    
 
 
 \subsubsection{Analysis of results}
-\begin{tabular}{SSSSSSSS} \toprule
-    {$m$} & {$\Re\{\underline{\mathfrak{X}}(m)\}$} & {$-\Im\{\underline{\mathfrak{X}}(m)\}$} & {$\mathfrak{X}(m)$} & {$\frac{\mathfrak{X}(m)}{23}$} & {$A_m$} & {$\varphi(m)\ /\ ^{\circ}$} & {$\varphi_m\ /\ ^{\circ}$} \\ \midrule
-    1  & 16.128 & +8.872 & 16.128 & 1.402 & 1.373 & -146.6 & -137.6 \\
-    2  & 3.442  & -2.509 & 3.442  & 0.299 & 0.343 & 133.2  & 152.4  \\
-    3  & 1.826  & -0.363 & 1.826  & 0.159 & 0.119 & 168.5  & -161.1 \\
-    4  & 0.993  & -0.429 & 0.993  & 0.086 & 0.08  & 25.6   & 90     \\ \midrule
-    5  & 1.29   & +0.099 & 1.29   & 0.112 & 0.097 & -175.6 & -114.7 \\
-    6  & 0.483  & -0.183 & 0.483  & 0.042 & 0.063 & 22.3   & 122.5  \\
-    7  & 0.766  & -0.475 & 0.766  & 0.067 & 0.039 & 141.6  & -122   \\
-    8  & 0.624  & +0.365 & 0.624  & 0.054 & 0.04  & -35.7  & 90     \\ \midrule
-    9  & 0.641  & -0.466 & 0.641  & 0.056 & 0.045 & 133.3  & -106.3 \\
-    10 & 0.45   & +0.421 & 0.45   & 0.039 & 0.034 & -69.4  & 110.9  \\
-    11 & 0.598  & -0.597 & 0.598  & 0.052 & 0.025 & 92.3   & -109.3 \\ \bottomrule
-\end{tabular}
+
+We compare our fully tuned models without PCA to out of the box models with PCA. As you can see from Table 1 below
+out-of-box with PCA have similar or better performance to the ones we fully tune without PCA.
+The models most affected by PCA are LDA, QDA and \textit{k-NN}. Using PCA improves the perfomance of QDA and K-NN dramatically, 
+for Logisitc regression and LDA the performance is not improved too much as the optimal models from the tuning already contain severe forms of regularization,
+which is very similar in spirit to what PCA is doing.
+
+
+
+\begin{table}[h]
+    \begin{tabular}{SSSSSSSS} \toprule
+        {$m$} & {$\Re\{\underline{\mathfrak{X}}(m)\}$} & {$-\Im\{\underline{\mathfrak{X}}(m)\}$} & {$\mathfrak{X}(m)$} & {$\frac{\mathfrak{X}(m)}{23}$} & {$A_m$} & {$\varphi(m)\ /\ ^{\circ}$} & {$\varphi_m\ /\ ^{\circ}$} \\ \midrule
+        1  & 16.128 & +8.872 & 16.128 & 1.402 & 1.373 & -146.6 & -137.6 \\
+        2  & 3.442  & -2.509 & 3.442  & 0.299 & 0.343 & 133.2  & 152.4  \\
+        3  & 1.826  & -0.363 & 1.826  & 0.159 & 0.119 & 168.5  & -161.1 \\
+        4  & 0.993  & -0.429 & 0.993  & 0.086 & 0.08  & 25.6   & 90     \\ \midrule
+        5  & 1.29   & +0.099 & 1.29   & 0.112 & 0.097 & -175.6 & -114.7 \\
+        6  & 0.483  & -0.183 & 0.483  & 0.042 & 0.063 & 22.3   & 122.5  \\
+        7  & 0.766  & -0.475 & 0.766  & 0.067 & 0.039 & 141.6  & -122   \\
+        8  & 0.624  & +0.365 & 0.624  & 0.054 & 0.04  & -35.7  & 90     \\ \midrule
+        9  & 0.641  & -0.466 & 0.641  & 0.056 & 0.045 & 133.3  & -106.3 \\
+        10 & 0.45   & +0.421 & 0.45   & 0.039 & 0.034 & -69.4  & 110.9  \\
+        11 & 0.598  & -0.597 & 0.598  & 0.052 & 0.025 & 92.3   & -109.3 \\ \bottomrule
+    \end{tabular}
+\caption{Fully tuned models with PCA vs out-of-box with PCA.}
+\label{tab:baseline}        
+\end{table} 
 
 
 
