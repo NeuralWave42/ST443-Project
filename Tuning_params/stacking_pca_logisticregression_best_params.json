@@ -1,5 +1,0 @@
-{
-    "pca__n_components": 25,
-    "MODEL_NAME": "stacking_pca_logisticregression",
-    "TIME_ELAPSED_MIN": 0.4262394030888875
-}

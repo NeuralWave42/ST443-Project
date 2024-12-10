@@ -1,2 +1,0 @@
-Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
-knn_pca,0.9278538812785389,0.9111423402468178,0.956435355689087,0.8961892247043364,"[[675, 18], [61, 341]]"

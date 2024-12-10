@@ -1,9 +1,0 @@
-{
-    "gbdt_pca__learning_rate": 0.2,
-    "gbdt_pca__max_depth": 3,
-    "gbdt_pca__max_features": "sqrt",
-    "gbdt_pca__n_estimators": 200,
-    "pca__n_components": 20,
-    "MODEL_NAME": "gbdt_pca",
-    "TIME_ELAPSED_MIN": 1.075439703464508
-}

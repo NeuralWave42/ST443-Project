@@ -1,5 +1,0 @@
-{
-    "pca__n_components": 50,
-    "MODEL_NAME": "stacking_pca_gradientboostingclassifier",
-    "TIME_ELAPSED_MIN": 0.5060031652450562
-}

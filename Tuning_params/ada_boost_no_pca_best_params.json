@@ -1,7 +1,0 @@
-{
-    "ada_boost_no_pca__estimator": "DecisionTreeClassifier(max_depth=2)",
-    "ada_boost_no_pca__learning_rate": 0.5,
-    "ada_boost_no_pca__n_estimators": 200,
-    "MODEL_NAME": "ada_boost_no_pca",
-    "TIME_ELAPSED_MIN": 19.69327712059021
-}

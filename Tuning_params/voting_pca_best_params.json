@@ -1,6 +1,0 @@
-{
-    "pca__n_components": 20,
-    "voting_pca__voting": "soft",
-    "MODEL_NAME": "voting_pca",
-    "TIME_ELAPSED_MIN": 0.1421801805496216
-}

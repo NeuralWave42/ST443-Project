@@ -1,7 +1,0 @@
-{
-    "elasticnet_logit_pca__C": 10,
-    "elasticnet_logit_pca__l1_ratio": 0.1,
-    "pca__n_components": 50,
-    "MODEL_NAME": "elasticnet_logit_pca",
-    "TIME_ELAPSED_MIN": 0.46031280358632404
-}

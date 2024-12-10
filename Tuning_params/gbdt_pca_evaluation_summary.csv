@@ -1,2 +1,0 @@
-Model,Accuracy,Balanced Accuracy,AUC,F1 Score,Confusion Matrix
-gbdt_pca,0.9470319634703196,0.9383063039779458,0.9901682065861169,0.926208651399491,"[[673, 20], [38, 364]]"
