@@ -14,6 +14,7 @@
 % \usepackage[preprint]{neurips_2024}
 \usepackage[preprint]{neurips_2024}
 \begin{document}
+\graphicspath{ {Figures/} }
 
 \section{1.1 Exploratory data analysis}
 
@@ -26,11 +27,6 @@ We have a dataset that consists of 5471 (n) samples with 4124 (p) columns. The f
 for genes. It is worth mentioning that the dataset is sparse, that is, a lot of cells have many gene expressions that are 0. While it is hard to have an objective measure
 of sparsity we can plot average gene expression levels across all our features, see Figure \ref{fig:hist_sparse} below, most genes are non zero for a limited number of cells.
 
-\begin{figure}[h]
-
-    
-    \caption{Possible figure of average gene expression level across all genes. We can do either histogram or histogram by label.}\label{fig:hist_sparse}
-\end{figure}
 
 
 We have 2 distinct classes of cells, the TREG cells and the CD4+T cells. 
@@ -48,8 +44,8 @@ As you can see below in Figure \ref{fig:scree}, choosing just the first ten comp
 In Section \ref{sec:1.3} we will try to tune the number of components to get an improved F1-Score.
 
 \begin{figure}[h]
-    
-    
+    \centering
+    \includegraphics[width=0.8\textwidth]{t11_screeplot.pdf}
     \caption{Scree plot: cumulative sum of PCA components.}\label{fig:scree}
 \end{figure}
 
@@ -60,8 +56,8 @@ in later sections we find it difficult to improve the F1-Score beyond 0.95.
 
 
 \begin{figure}[h]
-    
-    
+    \centering
+    \includegraphics[width=0.8\textwidth]{t11_joint_tsne.pdf}
     \caption{Joint distribution of transformed data by t-SNE}\label{fig:tsne}
 \end{figure}
 % Make sure we explain why it doesn't work. -> T-sne or something like that.
@@ -85,7 +81,7 @@ Some models need the data to be standarized, and we are also asked to use PCA, w
 streamlines our analysis and avoids some \href{https://scikit-learn.org/stable/common_pitfalls.html}{common pitfalls.}
 Example: Our cross validation estimator has selected a random subset of the training data, then the pipeline will: Standarize the data $\rightarrow$ Apply PCA $\rightarrow$ Fit the classifier on the preprocessed data.
 
-Finally, throughout our analysis we set a random seed so that our results are reproducible.
+Finally, throughout our analysis we tried to set a random seed so that our results are reproducible. We forgot about randomness in the PCA algorithm used by scikit-learn, while the exact numbers may change, the overall picture and decision making is not affected.
 
 \subsection{Hyperparameter tuning the baseline models.}
 We focus on tuning the models without PCA, as that is where most of the gains can be made. Due to the relatively high dimensionality of the
@@ -121,41 +117,57 @@ Finally, across our tuning, we  use tuning paramters related to class weights we
 
 We compare our fully tuned models without PCA to out of the box models with PCA. As you can see from Table 1 below
 out-of-box with PCA have similar or better performance to the ones we fully tune without PCA.
-The models most affected by PCA are LDA, QDA and \textit{k-NN}. Using PCA improves the perfomance of QDA and K-NN dramatically, 
-for Logisitc regression and LDA the performance is not improved too much as the optimal models from the tuning already contain severe forms of regularization,
-which is very similar in spirit to what PCA is doing.
-
-
+The models most affected by PCA are LDA, QDA and \textit{k-NN}. Using PCA improves the perfomance of QDA and K-NN dramatically. 
+For Logistic regression and LDA, the performance is not improved too much as the optimal models from the tuning already contain severe forms of regularization,
+which is very similar in spirit to what PCA is doing. SVM is consistently great. Random forest gets a small improvement from the PCA and GBDT lowers the performance slightly,
+although both these models are consistent in making very good predictions.
 
 \begin{table}[h]
-    \begin{tabular}{SSSSSSSS} \toprule
-        {$m$} & {$\Re\{\underline{\mathfrak{X}}(m)\}$} & {$-\Im\{\underline{\mathfrak{X}}(m)\}$} & {$\mathfrak{X}(m)$} & {$\frac{\mathfrak{X}(m)}{23}$} & {$A_m$} & {$\varphi(m)\ /\ ^{\circ}$} & {$\varphi_m\ /\ ^{\circ}$} \\ \midrule
-        1  & 16.128 & +8.872 & 16.128 & 1.402 & 1.373 & -146.6 & -137.6 \\
-        2  & 3.442  & -2.509 & 3.442  & 0.299 & 0.343 & 133.2  & 152.4  \\
-        3  & 1.826  & -0.363 & 1.826  & 0.159 & 0.119 & 168.5  & -161.1 \\
-        4  & 0.993  & -0.429 & 0.993  & 0.086 & 0.08  & 25.6   & 90     \\ \midrule
-        5  & 1.29   & +0.099 & 1.29   & 0.112 & 0.097 & -175.6 & -114.7 \\
-        6  & 0.483  & -0.183 & 0.483  & 0.042 & 0.063 & 22.3   & 122.5  \\
-        7  & 0.766  & -0.475 & 0.766  & 0.067 & 0.039 & 141.6  & -122   \\
-        8  & 0.624  & +0.365 & 0.624  & 0.054 & 0.04  & -35.7  & 90     \\ \midrule
-        9  & 0.641  & -0.466 & 0.641  & 0.056 & 0.045 & 133.3  & -106.3 \\
-        10 & 0.45   & +0.421 & 0.45   & 0.039 & 0.034 & -69.4  & 110.9  \\
-        11 & 0.598  & -0.597 & 0.598  & 0.052 & 0.025 & 92.3   & -109.3 \\ \bottomrule
+    \centering
+    \begin{tabular}{lSSSSl}
+        \toprule
+        {Model} & {Accuracy} & {Balanced Acc.} & {AUC} & {F1 Score} & {Confusion Matrix} \\
+        \midrule
+        LDA & \textbf{0.965} & \textbf{0.956} & 0.993 & \textbf{0.951} & \([687, 6], [32, 370]\) \\
+        LOGIT & 0.958 & 0.954 & 0.993 & 0.942 & \([672, 21], [25, 377]\) \\
+        QDA & 0.367 & 0.500 & 0.500 & 0.537 & \([0, 693], [0, 402]\) \\
+        KNN & 0.788 & 0.777 & 0.874 & 0.718 & \([567, 126], [106, 296]\) \\
+        SVM & 0.956 & 0.953 & 0.993 & 0.940 & \([669, 24], [24, 378]\) \\
+        RF & 0.943 & 0.924 & 0.993 & 0.917 & \([690, 3], [59, 343]\) \\
+        GBDT & 0.963 & 0.955 & \textbf{0.994} & 0.949 & \([684, 9], [31, 371]\) \\ \midrule
+        \textit{With PCA} \\\midrule
+        LDA & 0.950 & 0.936 & 0.994 & 0.928 & \([685, 8], [47, 355]\) \\
+        LOGIT & 0.966 & 0.965 & 0.994 & 0.954 & \([672, 21], [16, 386]\) \\
+        QDA & 0.960 & 0.958 & 0.993 & 0.946 & \([669, 24], [20, 382]\) \\
+        KNN & 0.928 & 0.911 & 0.956 & 0.896 & \([675, 18], [61, 341]\) \\
+        SVM & \textbf{0.967} & \textbf{0.966} & \textbf{0.994} & \textbf{0.956} & \([672, 21], [15, 387]\) \\
+        RF & 0.957 & 0.947 & 0.989 & 0.940 & \([683, 10], [37, 365]\) \\
+        GBDT & 0.947 & 0.938 & 0.990 & 0.926 & \([673, 20], [38, 364]\) \\
+        \bottomrule
     \end{tabular}
-\caption{Fully tuned models with PCA vs out-of-box with PCA.}
-\label{tab:baseline}        
-\end{table} 
-
+    \caption{Fully tuned models with PCA vs out-of-box with PCA.}
+    \label{tab:metrics}
+\end{table}
 
 
 
 \section{Our 3 models} \label{sec:1.3}
+We tried 3\footnote{We tried more than 3 but settled on these 3 because they showcase very different methods.} simple approaches of some things
+we saw in class and from our learning in the baseline models. We implemented the AdaBoost from class and tuned it, tinkered with the decision thresholds and we 
+tried different numbers of PCA components with an out-of-box SVM. None of our approaches let us \textbf{consistenly} improve to F1 scores of 0.96 or 0.97
+\footnote{Due to this we omit showing these results, they can be found in the notebook for completeness.}. 
 
-Explanation of your approaches 15 points!
 \begin{itemize}
     \item AdaBoost, just because we have seen it in class and it could be interesting.
-    \item Play around with the PCA optimality. Logit with tuned PCA and everything else.
-    \item Threshold optimization. 
+    \item Threshold optimization: https://towardsdatascience.com/tune-in-decision-threshold-optimization-with-scikit-learns-tunedthresholdclassifiercv-7de558a2cf58
+    \item SVM with pca optimization.
 \end{itemize}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{RF_THRESHOLD_DEF.png}
+    \caption{Thresholding example with a random forest model.}\label{fig:thresh_rf}
+\end{figure}
+\subsection{Our final predictor:}
 
 \end{document}
